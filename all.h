@@ -31,7 +31,7 @@ typedef struct Dat Dat;
 typedef struct Target Target;
 
 enum {
-	NString = 32,
+	NString = 64,
 	NPred   = 63,
 	NIns    = 1 << 20,
 	NAlign  = 3,

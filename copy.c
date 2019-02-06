@@ -9,10 +9,9 @@ struct RList {
 static Ref
 copyof(Ref r, Ref *cp)
 {
-	if (rtype(r) == RTmp)
-		return cp[r.val];
-	else
-		return r;
+	while (rtype(r) == RTmp && !req(r, cp[r.val]))
+		r = cp[r.val];
+	return r;
 }
 
 static void

@@ -84,6 +84,9 @@ fixarg(Ref *r, int k, int op, Fn *fn)
 		sprintf(buf, "fp%d", n);
 		a.offset.label = intern(buf);
 		fn->mem[fn->nmem-1] = a;
+		r0 = r1;
+		r1 = newtmp("isel", k, fn);
+		emit(Ocopy, k, r1, r0, R);
 	}
 	else if (!cpy && k == Kl && noimm(r0, fn)) {
 		/* load constants that do not fit in

@@ -434,7 +434,7 @@ emitins(Ins i, Fn *fn, FILE *f)
 		 * also, we can use a trick to load 64-bits
 		 * registers, it's detailed in my note below
 		 * http://c9x.me/art/notes.html?09/19/2015 */
-		if (req(i.to, R) || req(i.arg[0], R))
+		if (req(i.to, R) || req(i.arg[0], R) || req(i.arg[0], i.to))
 			break;
 		if (isreg(i.to)
 		&& rtype(i.arg[0]) == RCon
@@ -447,7 +447,18 @@ emitins(Ins i, Fn *fn, FILE *f)
 		&& rtype(i.arg[0]) == RCon
 		&& fn->con[i.arg[0].val].type == CAddr) {
 			emitf("lea%k %M0, %=", &i, fn, f);
-		} else if (!req(i.arg[0], i.to))
+		} else if (rtype(i.to) == RSlot
+		&& rtype(i.arg[0]) == RSlot) {
+			i.arg[1] = TMP(XMM0+15);
+			/* HACK: ugly workaround for mem-to-mem mov */
+			if (KWIDE(i.cls)) {
+				emitf("movq %0, %1", &i, fn, f);
+				emitf("movq %1, %=", &i, fn, f);
+			} else {
+				emitf("movd %0, %1", &i, fn, f);
+				emitf("movd %1, %=", &i, fn, f);
+			}
+		} else
 			emitf("mov%k %0, %=", &i, fn, f);
 		break;
 	case Ocall:

@@ -409,7 +409,9 @@ ssacheck(Fn *fn)
 						if (u->type == UIns)
 							if (u->u.ins <= i)
 								goto Err;
-					}
+					} else
+						if (!sdom(b, bu))
+							goto Err;
 				}
 			}
 		}

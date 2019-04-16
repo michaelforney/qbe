@@ -64,10 +64,11 @@ fixarg(Ref *r, int k, int op, Fn *fn)
 	char buf[32];
 	Addr a, *m;
 	Ref r0, r1;
-	int s, n, mem;
+	int s, n, cpy, mem;
 
 	r1 = r0 = *r;
 	s = rslot(r0, fn);
+	cpy = op == Ocopy || op == -1;
 	mem = isstore(op) || isload(op) || op == Ocall;
 	if (KBASE(k) == 1 && rtype(r0) == RCon) {
 		/* load floating points from memory
@@ -84,7 +85,7 @@ fixarg(Ref *r, int k, int op, Fn *fn)
 		a.offset.label = intern(buf);
 		fn->mem[fn->nmem-1] = a;
 	}
-	else if (k == Kl && noimm(r0, fn)) {
+	else if (!cpy && k == Kl && noimm(r0, fn)) {
 		/* load constants that do not fit in
 		 * a 32bit signed integer into a
 		 * long temporary

@@ -404,7 +404,6 @@ spill(Fn *fn)
 				continue;
 			}
 			bszero(w);
-			s = -1;
 			if (!req(i->to, R)) {
 				assert(rtype(i->to) == RTmp);
 				t = i->to.val;

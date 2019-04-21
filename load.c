@@ -330,6 +330,8 @@ def(Slice sl, bits msk, Blk *b, Ins *i, Loc *il)
 	p->to = r;
 	p->cls = sl.cls;
 	p->narg = b->npred;
+	if (b->npred >= NPred)
+		die("def, too many phi args (%u)", b->npred);
 	for (np=0; np<b->npred; ++np) {
 		bp = b->pred[np];
 		if (!bp->s2

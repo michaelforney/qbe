@@ -1,0 +1,8 @@
+image: freebsd/latest
+sources:
+- https://git.sr.ht/~mcf/qbe
+packages:
+- gmake
+tasks:
+- build: gmake -C qbe
+- test: gmake -C qbe check

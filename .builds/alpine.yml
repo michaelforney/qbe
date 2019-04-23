@@ -1,0 +1,6 @@
+image: alpine/edge
+sources:
+- https://git.sr.ht/~mcf/qbe
+tasks:
+- build: make -C qbe
+- test: make -C qbe check

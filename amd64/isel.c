@@ -110,7 +110,7 @@ fixarg(Ref *r, int k, int op, Fn *fn)
 	else if (rtype(r0) == RMem) {
 		/* apple asm fix */
 		m = &fn->mem[r0.val];
-		if (req(m->base, R)) {
+		if (req(m->base, R) && m->offset.type == CAddr) {
 			n = fn->ncon;
 			vgrow(&fn->con, ++fn->ncon);
 			fn->con[n] = m->offset;

@@ -333,8 +333,10 @@ Next:
 			fprintf(f, "%d(%%rbp)", slot(ref.val, fn));
 			break;
 		case RCon:
-			emitcon(&fn->con[ref.val], f);
-			fprintf(f, "(%%rip)");
+			off = fn->con[ref.val];
+			emitcon(&off, f);
+			if (off.type == CAddr)
+				fprintf(f, "(%%rip)");
 			break;
 		case RTmp:
 			assert(isreg(ref));

@@ -449,7 +449,7 @@ spill(Fn *fn)
 					t = i->arg[n].val;
 					if (!bshas(v, t)) {
 						/* do not reload if the
-						 * the temporary was dead
+						 * argument is dead
 						 */
 						if (!lvarg[n])
 							bsclr(u, t);

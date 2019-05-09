@@ -240,7 +240,12 @@ pmrec(enum PMStat *status, int i, int *k)
 		/* fall through */
 	case Moved:
 		c = -1;
-		emit(Ocopy, pm[i].cls, dst, src, R);
+		if (dst.type == RSlot && src.type == RTmp)
+			emit(Ostorew + pm[i].cls, 0, R, src, dst);
+		else if (dst.type == RTmp && src.type == RSlot)
+			emit(Oload, pm[i].cls, dst, src, R);
+		else
+			emit(Ocopy, pm[i].cls, dst, src, R);
 		break;
 	}
 	status[i] = Moved;

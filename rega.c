@@ -204,14 +204,11 @@ static int
 pmrec(enum PMStat *status, int i, int *k)
 {
 	int j, c;
-	Ref src, dst;
 
-	src = pm[i].src;
-	dst = pm[i].dst;
 	/* note, this routine might emit
 	 * too many large instructions
 	 */
-	if (req(src, dst)) {
+	if (req(pm[i].src, pm[i].dst)) {
 		status[i] = Moved;
 		return -1;
 	}
@@ -219,12 +216,12 @@ pmrec(enum PMStat *status, int i, int *k)
 	assert((Kw|Kl) == Kl && (Ks|Kd) == Kd);
 	*k |= pm[i].cls;
 	for (j=0; j<npm; j++)
-		if (req(pm[j].dst, src))
+		if (req(pm[j].dst, pm[i].src))
 			break;
 	switch (j == npm ? Moved : status[j]) {
 	case Moving:
 		c = j; /* start of cycle */
-		emit(Oswap, *k, R, src, dst);
+		emit(Oswap, *k, R, pm[i].src, pm[i].dst);
 		break;
 	case ToMove:
 		status[i] = Moving;
@@ -234,13 +231,13 @@ pmrec(enum PMStat *status, int i, int *k)
 			break;
 		}
 		if (c != -1) {
-			emit(Oswap, *k, R, src, dst);
+			emit(Oswap, *k, R, pm[i].src, pm[i].dst);
 			break;
 		}
 		/* fall through */
 	case Moved:
 		c = -1;
-		emit(Ocopy, pm[i].cls, dst, src, R);
+		emit(Ocopy, pm[i].cls, pm[i].dst, pm[i].src, R);
 		break;
 	}
 	status[i] = Moved;

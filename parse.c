@@ -236,7 +236,7 @@ lex()
 	case '$':
 		t = Tglo;
 		if ((c = fgetc(inf)) == '"')
-			goto String;
+			goto Quoted;
 		goto Alpha;
 	case ':':
 		t = Ttyp;
@@ -257,7 +257,7 @@ lex()
 	}
 	if (c == '"') {
 		t = Tstr;
-	String:
+	Quoted:
 		tokval.str = vnew(2, 1, Pfn);
 		tokval.str[0] = c;
 		esc = 0;

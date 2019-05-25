@@ -1,0 +1,25 @@
+# tests that floating point equality works
+# on amd64, which requires additional
+# instructions to check that the operands
+# are ordered.
+
+export function w $eq(s %x, s %y) {
+@start
+	%r =w ceqs %x, %y
+	ret %r
+}
+
+export function w $ne(s %x, s %y) {
+@start
+	%r =w cnes %x, %y
+	ret %r
+}
+
+# >>> driver
+# #include <math.h>
+# extern int eq(float, float);
+# extern int ne(float, float);
+# int main() {
+# 	return !(eq(NAN, NAN) == 0 && ne(NAN, NAN) == 1);
+# }
+# <<<

@@ -327,6 +327,21 @@ Emit:
 		if (isload(i.op))
 			goto case_Oload;
 		if (iscmp(i.op, &kc, &x)) {
+			/* ZF is set when operands are unordered, so we
+			 * may have to check PF as well.
+			 */
+			switch (x) {
+			case NCmpI+Cfeq:
+				r0 = newtmp("isel", Kw, fn);
+				emit(Oand, Kw, i.to, i.to, r0);
+				emit(Oflagfo, k, r0, R, R);
+				break;
+			case NCmpI+Cfne:
+				r0 = newtmp("isel", Kw, fn);
+				emit(Oor, Kw, i.to, i.to, r0);
+				emit(Oflagfuo, k, r0, R, R);
+				break;
+			}
 			emit(Oflag+x, k, i.to, R, R);
 			i1 = curi;
 			if (selcmp(i.arg, kc, fn))

@@ -254,7 +254,7 @@ their size between curly braces.
 
     `bnf
     DATADEF :=
-        ['export'] 'data' $IDENT '=' ['align' NUMBER]
+        ['export'] 'data' [SECTION] $IDENT '=' ['align' NUMBER]
         '{'
             ( EXTTY DATAITEM+
             | 'z'   NUMBER ),
@@ -265,13 +265,19 @@ their size between curly braces.
       |  '"' ... '"'         # String
       |  CONST               # Constant
 
+    SECTION :=
+        'section' '"' ... '"'
+
+
 Data definitions express objects that will be emitted in the
 compiled file.  They can be local to the file or exported
 with global visibility to the whole program.
 
 They define a global identifier (starting with the sigil
 `$`), that will contain a pointer to the object specified
-by the definition.
+by the definition. If a SECTION is specified, the data will
+be written to that section of the object file; otherwise
+`.data` is used.
 
 Objects are described by a sequence of fields that start with
 a type letter.  This letter can either be an extended type,
@@ -305,6 +311,9 @@ Here are various examples of data definitions.
     # other containing a pointer to the
     # object itself.
     data $c = { l -1, l $c }
+
+    # An object written to the .bss section
+    data section ".bss" $d = { w 0 }
 
 ~ Functions
 ~~~~~~~~~~~

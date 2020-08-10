@@ -1,0 +1,16 @@
+# Simple test for init functions, assumes a sane libc
+
+function $init() {
+@start
+	storew 0, $x
+	ret
+}
+
+data section ".init_array" $initfns = align 8 { l $init }
+
+# >>> driver
+# int x = 1;
+# int main() {
+# 	return x;
+# }
+# <<<

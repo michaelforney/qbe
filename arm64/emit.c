@@ -404,7 +404,7 @@ arm64_emitfn(Fn *fn, FILE *out)
 	if (e->fn->vararg) {
 		for (n=7; n>=0; n--)
 			fprintf(e->f, "\tstr\tq%d, [sp, -16]!\n", n);
-		for (n=7; n>=0; n -= 2)
+		for (n=7; n>=0; n-=2)
 			fprintf(e->f, "\tstp\tx%d, x%d, [sp, -16]!\n", n-1, n);
 	}
 

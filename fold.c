@@ -456,6 +456,8 @@ foldflt(Con *res, int op, int w, Con *cl, Con *cr)
 
 	if (cl->type != CBits || cr->type != CBits)
 		err("invalid address operand for '%s'", optab[op].name);
+	res->type = CBits;
+	memset(&res->bits, 0, sizeof(res->bits));
 	if (w)  {
 		ld = cl->bits.d;
 		rd = cr->bits.d;
@@ -470,7 +472,8 @@ foldflt(Con *res, int op, int w, Con *cl, Con *cr)
 		case Ocast: xd = ld; break;
 		default: die("unreachable");
 		}
-		*res = (Con){CBits, .bits={.d=xd}, .flt=2};
+		res->bits.d = xd;
+		res->flt = 2;
 	} else {
 		ls = cl->bits.s;
 		rs = cr->bits.s;
@@ -485,7 +488,8 @@ foldflt(Con *res, int op, int w, Con *cl, Con *cr)
 		case Ocast: xs = ls; break;
 		default: die("unreachable");
 		}
-		*res = (Con){CBits, .bits={.s=xs}, .flt=1};
+		res->bits.s = xs;
+		res->flt = 1;
 	}
 }
 

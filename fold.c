@@ -456,7 +456,7 @@ foldflt(Con *res, int op, int w, Con *cl, Con *cr)
 
 	if (cl->type != CBits || cr->type != CBits)
 		err("invalid address operand for '%s'", optab[op].name);
-	res->type = CBits;
+	*res = (Con){CBits};
 	memset(&res->bits, 0, sizeof(res->bits));
 	if (w)  {
 		ld = cl->bits.d;

@@ -396,6 +396,7 @@ struct Dat {
 	char isstr;
 	char export;
 	char *section;
+	char *secflags;
 };
 
 /* main.c */

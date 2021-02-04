@@ -995,6 +995,7 @@ parsedat(void cb(Dat *), int export)
 	d.isref = 0;
 	d.export = export;
 	d.section = NULL;
+	d.secflags = NULL;
 
 	t = nextnl();
 	if (t == Tsection) {
@@ -1002,6 +1003,10 @@ parsedat(void cb(Dat *), int export)
 			err("section \"name\" expected");
 		d.section = tokval.str;
 		t = nextnl();
+		if (t == Tstr) {
+			d.secflags = tokval.str;
+			t = nextnl();
+		}
 	}
 
 	if (t != Tglo || nextnl() != Teq)

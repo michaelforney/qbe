@@ -19,7 +19,9 @@ gasemitdat(Dat *d, FILE *f)
 	switch (d->type) {
 	case DStart:
 		align = 0;
-		if (d->section != NULL) {
+		if (d->section != NULL && d->secflags != NULL) {
+			fprintf(f, ".section %s, %s\n", d->section, d->secflags);
+		} else if (d->section != NULL) {
 			fprintf(f, ".section %s\n", d->section);
 		} else {
 			fprintf(f, ".data\n");

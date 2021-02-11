@@ -346,6 +346,8 @@ struct Fn {
 	char vararg;
 	char dynalloc;
 	char name[NString];
+	char *section;
+	char *secflags;
 };
 
 struct Typ {

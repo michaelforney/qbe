@@ -321,7 +321,7 @@ Here are various examples of data definitions.
 
     `bnf
     FUNCDEF :=
-        ['export'] 'function' [ABITY] $IDENT '(' (PARAM), ')'
+        ['export'] 'function' [SECTION [FLAGS]] [ABITY] $IDENT '(' (PARAM), ')'
         '{'
            BLOCK+
         '}'
@@ -333,10 +333,17 @@ Here are various examples of data definitions.
 
     ABITY := BASETY | :IDENT
 
+    SECTION :=
+        'section' '"' ... '"'
+
 Function definitions contain the actual code to emit in
 the compiled file.  They define a global symbol that
 contains a pointer to the function code.  This pointer
 can be used in `call` instructions or stored in memory.
+If a SECTION is specified, the data will be written to
+that section of the object file; otherwise `.text` is
+used. If SECTION is specified, FLAGS may also be
+specified to set the flags for that section.
 
 The type given right before the function name is the
 return type of the function.  All return values of this

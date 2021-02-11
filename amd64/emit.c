@@ -543,7 +543,13 @@ amd64_emitfn(Fn *fn, FILE *f)
 	char *p;
 
 	p = fn->name[0] == '"' ? "" : gassym;
-	fprintf(f, ".text\n");
+	if (fn->section != NULL && fn->secflags != NULL) {
+		fprintf(f, ".section %s, %s\n", fn->section, fn->secflags);
+	} else if (fn->section != NULL) {
+		fprintf(f, ".section %s\n", fn->section);
+	} else {
+		fprintf(f, ".text\n");
+	}
 	if (fn->export)
 		fprintf(f, ".globl %s%s\n", p, fn->name);
 	fprintf(f,

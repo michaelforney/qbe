@@ -807,6 +807,20 @@ parsefn(int export)
 	curf->export = export;
 	blink = &curf->start;
 	curf->retty = Kx;
+
+	curf->section = NULL;
+	curf->secflags = NULL;
+	if (peek() == Tsection) {
+		next();
+		if (next() != Tstr)
+			err("section \"name\" expected");
+		curf->section = tokval.str;
+		if (peek() == Tstr) {
+			next();
+			curf->secflags = tokval.str;
+		}
+	}
+
 	if (peek() != Tglo)
 		rcls = parsecls(&curf->retty);
 	else

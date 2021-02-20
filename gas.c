@@ -1,10 +1,7 @@
 #include "all.h"
 
-
-char *gasloc, *gassym;
-
-void
-gasemitdat(Dat *d, FILE *f)
+static void
+emitdat(Dat *d, FILE *f)
 {
 	static int aligned;
 	static char *dtoa[] = {
@@ -30,7 +27,7 @@ gasemitdat(Dat *d, FILE *f)
 	case DName:
 		if (!aligned)
 			fprintf(f, ".balign 8\n");
-		p = d->u.str[0] == '"' ? "" : gassym;
+		p = d->u.str[0] == '"' ? "" : asm.sym;
 		if (d->export)
 			fprintf(f, ".globl %s%s\n", p, d->u.str);
 		fprintf(f, "%s%s:\n", p, d->u.str);
@@ -48,7 +45,7 @@ gasemitdat(Dat *d, FILE *f)
 			fprintf(f, "\t.ascii %s\n", d->u.str);
 		}
 		else if (d->isref) {
-			p = d->u.ref.nam[0] == '"' ? "" : gassym;
+			p = d->u.ref.nam[0] == '"' ? "" : asm.sym;
 			fprintf(f, "%s %s%s%+"PRId64"\n",
 				dtoa[d->type], p, d->u.ref.nam,
 				d->u.ref.off);
@@ -71,8 +68,8 @@ struct Asmbits {
 
 static Asmbits *stash;
 
-int
-gasstash(void *bits, int size)
+static int
+stashbits(void *bits, int size)
 {
 	Asmbits **pb, *b;
 	int i;
@@ -90,8 +87,8 @@ gasstash(void *bits, int size)
 	return i;
 }
 
-void
-gasemitfin(FILE *f)
+static void
+emitfin(FILE *f)
 {
 	Asmbits *b;
 	char *p;
@@ -107,7 +104,7 @@ gasemitfin(FILE *f)
 				fprintf(f,
 					".balign %d\n"
 					"%sfp%d:",
-					sz, gasloc, i
+					sz, asm.loc, i
 				);
 				for (p=b->bits; p<&b->bits[sz]; p+=4)
 					fprintf(f, "\n\t.int %"PRId32,
@@ -128,3 +125,21 @@ gasemitfin(FILE *f)
 	}
 	fprintf(f, ".section .note.GNU-stack,\"\",@progbits\n");
 }
+
+Asm asm_gas_elf = {
+	.type = Asmgas,
+	.stash = stashbits,
+	.emitdat = emitdat,
+	.emitfin = emitfin,
+	.loc = ".L",
+	.sym = "",
+};
+
+Asm asm_gas_macho = {
+	.type = Asmgas,
+	.stash = stashbits,
+	.emitdat = emitdat,
+	.emitfin = emitfin,
+	.loc = "L",
+	.sym = "_",
+};

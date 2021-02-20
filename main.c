@@ -8,6 +8,11 @@ Target T;
 extern Target T_amd64_sysv;
 extern Target T_arm64;
 
+Asm asm;
+
+extern Asm asm_gas_elf;
+extern Asm asm_gas_macho;
+
 static struct TMap {
 	char *name;
 	Target *T;
@@ -15,11 +20,6 @@ static struct TMap {
 	{ "amd64_sysv", &T_amd64_sysv },
 	{ "arm64", &T_arm64 },
 	{ 0, 0 }
-};
-
-enum Asm {
-	Gasmacho,
-	Gaself,
 };
 
 char debug['Z'+1] = {
@@ -43,11 +43,11 @@ data(Dat *d)
 {
 	if (dbg)
 		return;
+	asm.emitdat(d, outf);
 	if (d->type == DEnd) {
 		fputs("/* end data */\n\n", outf);
 		freeall();
 	}
-	gasemitdat(d, outf);
 }
 
 static void
@@ -111,7 +111,7 @@ main(int ac, char *av[])
 	struct TMap *tm;
 	FILE *inf, *hf;
 	char *f, *sep;
-	int c, asm;
+	int c;
 
 	asm = Defasm;
 	T = Deftgt;
@@ -143,9 +143,9 @@ main(int ac, char *av[])
 			break;
 		case 'G':
 			if (strcmp(optarg, "e") == 0)
-				asm = Gaself;
+				asm = asm_gas_elf;
 			else if (strcmp(optarg, "m") == 0)
-				asm = Gasmacho;
+				asm = asm_gas_macho;
 			else {
 				fprintf(stderr, "unknown gas flavor '%s'\n", optarg);
 				exit(1);
@@ -162,21 +162,10 @@ main(int ac, char *av[])
 			for (tm=tmap, sep=""; tm->name; tm++, sep=", ")
 				fprintf(hf, "%s%s", sep, tm->name);
 			fprintf(hf, "\n");
-			fprintf(hf, "\t%-11s generate gas (e) or osx (m) asm\n", "-G {e,m}");
+			fprintf(hf, "\t%-11s generate gas (e), osx (m), or plan9 (9) asm\n", "-G {e,m,9}");
 			fprintf(hf, "\t%-11s dump debug information\n", "-d <flags>");
 			exit(c != 'h');
 		}
-
-	switch (asm) {
-	case Gaself:
-		gasloc = ".L";
-		gassym = "";
-		break;
-	case Gasmacho:
-		gasloc = "L";
-		gassym = "_";
-		break;
-	}
 
 	do {
 		f = av[optind];
@@ -194,7 +183,7 @@ main(int ac, char *av[])
 	} while (++optind < ac);
 
 	if (!dbg)
-		gasemitfin(outf);
+		asm.emitfin(outf);
 
 	exit(0);
 }

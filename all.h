@@ -29,6 +29,7 @@ typedef struct Typ Typ;
 typedef struct Field Field;
 typedef struct Dat Dat;
 typedef struct Target Target;
+typedef struct Asm Asm;
 
 enum {
 	NString = 64,
@@ -53,6 +54,20 @@ struct Target {
 	void (*abi)(Fn *);
 	void (*isel)(Fn *);
 	void (*emitfn)(Fn *, FILE *);
+};
+
+struct Asm {
+	enum {
+		Asmgas,
+		Asmplan9,
+	} type;
+	int (*stash)(void *, int);
+	void (*emitdat)(Dat *, FILE *);
+	void (*emitfin)(FILE *);
+
+	/* gas */
+	char *loc;
+	char *sym;
 };
 
 #define BIT(n) ((bits)1 << (n))
@@ -399,6 +414,7 @@ struct Dat {
 
 /* main.c */
 extern Target T;
+extern Asm asm;
 extern char debug['Z'+1];
 
 /* util.c */
@@ -512,10 +528,3 @@ void spill(Fn *);
 
 /* rega.c */
 void rega(Fn *);
-
-/* gas.c */
-extern char *gasloc;
-extern char *gassym;
-void gasemitdat(Dat *, FILE *);
-int gasstash(void *, int);
-void gasemitfin(FILE *);

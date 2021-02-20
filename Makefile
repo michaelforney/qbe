@@ -37,11 +37,11 @@ $(OBJDIR)/main.o: config.h
 config.h:
 	@case `uname` in                               \
 	*Darwin*)                                      \
-		echo "#define Defasm Gasmacho";        \
+		echo "#define Defasm asm_gas_macho";   \
 		echo "#define Deftgt T_amd64_sysv";    \
 		;;                                     \
 	*)                                             \
-		echo "#define Defasm Gaself";          \
+		echo "#define Defasm asm_gas_elf";     \
 		case `uname -m` in                     \
 		*aarch64*)                             \
 			echo "#define Deftgt T_arm64"; \

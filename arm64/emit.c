@@ -280,6 +280,8 @@ static void
 emitins(Ins *i, E *e)
 {
 	int o;
+	char *rn;
+	uint64_t s;
 
 	switch (i->op) {
 	default:
@@ -328,9 +330,17 @@ emitins(Ins *i, E *e)
 		break;
 	case Oaddr:
 		assert(rtype(i->arg[0]) == RSlot);
-		fprintf(e->f, "\tadd\t%s, x29, #%"PRIu64"\n",
-			rname(i->to.val, Kl), slot(i->arg[0].val, e)
-		);
+		rn = rname(i->to.val, Kl);
+		s = slot(i->arg[0].val, e);
+		if (s <= 4095) {
+			fprintf(e->f, "\tadd\t%s, x29, #%"PRIu64"\n", rn, s);
+		} else {
+			fprintf(e->f,
+				"\tmov\t%s, #%"PRIu64"\n"
+				"\tadd\t%s, x29, %s\n",
+				rn, s, rn, rn
+			);
+		}
 		break;
 	}
 }

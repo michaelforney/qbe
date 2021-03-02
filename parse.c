@@ -38,10 +38,10 @@ enum {
 	Tjnz,
 	Tret,
 	Texport,
-	Tsection,
 	Tfunc,
 	Ttype,
 	Tdata,
+	Tsection,
 	Talign,
 	Tl,
 	Tw,
@@ -88,10 +88,10 @@ static char *kwmap[Ntok] = {
 	[Tjnz] = "jnz",
 	[Tret] = "ret",
 	[Texport] = "export",
-	[Tsection] = "section",
 	[Tfunc] = "function",
 	[Ttype] = "type",
 	[Tdata] = "data",
+	[Tsection] = "section",
 	[Talign] = "align",
 	[Tl] = "l",
 	[Tw] = "w",
@@ -986,40 +986,36 @@ parsedatstr(Dat *d)
 static void
 parsedat(void cb(Dat *), int export)
 {
-	char s[NString];
+	char name[NString] = {0};
 	int t;
 	Dat d;
 
-	d.type = DStart;
-	d.isstr = 0;
-	d.isref = 0;
-	d.export = export;
-	d.section = NULL;
-
+	if (nextnl() != Tglo || nextnl() != Teq)
+		err("data name, then = expected");
+	strncpy(name, tokval.str, NString-1);
 	t = nextnl();
+	d.u.str = 0;
 	if (t == Tsection) {
 		if (nextnl() != Tstr)
 			err("section \"name\" expected");
-		d.section = tokval.str;
+		d.u.str = tokval.str;
 		t = nextnl();
 	}
-
-	if (t != Tglo || nextnl() != Teq)
-		die("data name, then = expected");
+	d.type = DStart;
 	cb(&d);
-
-	strcpy(s, tokval.str);
-	t = nextnl();
 	if (t == Talign) {
 		if (nextnl() != Tint)
 			err("alignment expected");
 		d.type = DAlign;
 		d.u.num = tokval.num;
+		d.isstr = 0;
+		d.isref = 0;
 		cb(&d);
 		t = nextnl();
 	}
 	d.type = DName;
-	d.u.str = s;
+	d.u.str = name;
+	d.export = export;
 	cb(&d);
 
 	if (t != Tlbrace)
@@ -1038,8 +1034,8 @@ parsedat(void cb(Dat *), int export)
 		}
 		t = nextnl();
 		do {
-			d.isref = 0;
 			d.isstr = 0;
+			d.isref = 0;
 			memset(&d.u, 0, sizeof d.u);
 			if (t == Tflts)
 				d.u.flts = tokval.flts;

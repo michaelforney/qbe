@@ -129,6 +129,8 @@ O(xtest,   T(w,l,e,e, w,l,e,e), 0) X(1, 1, 0)
 O(acmp,    T(w,l,e,e, w,l,e,e), 0) X(0, 0, 0)
 O(acmn,    T(w,l,e,e, w,l,e,e), 0) X(0, 0, 0)
 O(afcmp,   T(e,e,s,d, e,e,s,d), 0) X(0, 0, 0)
+O(reqz,    T(w,l,e,e, x,x,e,e), 0) X(0, 0, 0)
+O(rnez,    T(w,l,e,e, x,x,e,e), 0) X(0, 0, 0)
 
 /* Arguments, Parameters, and Calls */
 O(par,     T(x,x,x,x, x,x,x,x), 0) X(0, 0, 0)

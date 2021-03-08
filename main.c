@@ -12,6 +12,7 @@ Asm asm;
 
 extern Asm asm_gas_elf;
 extern Asm asm_gas_macho;
+extern Asm asm_plan9;
 
 static struct TMap {
 	char *name;
@@ -146,8 +147,10 @@ main(int ac, char *av[])
 				asm = asm_gas_elf;
 			else if (strcmp(optarg, "m") == 0)
 				asm = asm_gas_macho;
+			else if (strcmp(optarg, "9") == 0)
+				asm = asm_plan9;
 			else {
-				fprintf(stderr, "unknown gas flavor '%s'\n", optarg);
+				fprintf(stderr, "unknown asm '%s'\n", optarg);
 				exit(1);
 			}
 			break;

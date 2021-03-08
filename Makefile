@@ -4,7 +4,7 @@ V = @
 OBJDIR = obj
 
 SRC      = main.c util.c parse.c cfg.c mem.c ssa.c alias.c load.c copy.c \
-           fold.c live.c spill.c rega.c gas.c
+           fold.c live.c spill.c rega.c gas.c plan9asm.c
 AMD64SRC = amd64/targ.c amd64/sysv.c amd64/isel.c amd64/emit.c
 ARM64SRC = arm64/targ.c arm64/abi.c arm64/isel.c arm64/emit.c
 SRCALL   = $(SRC) $(AMD64SRC) $(ARM64SRC)

@@ -62,84 +62,102 @@ static struct {
 	short cls;
 	char *asm;
 } omap[] = {
-	{ Oadd,    Ka, "+add%k %1, %=" },
-	{ Osub,    Ka, "-sub%k %1, %=" },
-	{ Oand,    Ki, "+and%k %1, %=" },
-	{ Oor,     Ki, "+or%k %1, %=" },
-	{ Oxor,    Ki, "+xor%k %1, %=" },
-	{ Osar,    Ki, "-sar%k %B1, %=" },
-	{ Oshr,    Ki, "-shr%k %B1, %=" },
-	{ Oshl,    Ki, "-shl%k %B1, %=" },
-	{ Omul,    Ki, "+imul%k %1, %=" },
-	{ Omul,    Ks, "+mulss %1, %=" },
-	{ Omul,    Kd, "+mulsd %1, %=" },
-	{ Odiv,    Ka, "-div%k %1, %=" },
-	{ Ostorel, Ka, "movq %L0, %M1" },
-	{ Ostorew, Ka, "movl %W0, %M1" },
-	{ Ostoreh, Ka, "movw %H0, %M1" },
-	{ Ostoreb, Ka, "movb %B0, %M1" },
-	{ Ostores, Ka, "movss %S0, %M1" },
-	{ Ostored, Ka, "movsd %D0, %M1" },
-	{ Oload,   Ka, "mov%k %M0, %=" },
-	{ Oloadsw, Kl, "movslq %M0, %L=" },
-	{ Oloadsw, Kw, "movl %M0, %W=" },
-	{ Oloaduw, Ki, "movl %M0, %W=" },
-	{ Oloadsh, Ki, "movsw%k %M0, %=" },
-	{ Oloaduh, Ki, "movzw%k %M0, %=" },
-	{ Oloadsb, Ki, "movsb%k %M0, %=" },
-	{ Oloadub, Ki, "movzb%k %M0, %=" },
-	{ Oextsw,  Kl, "movslq %W0, %L=" },
-	{ Oextuw,  Kl, "movl %W0, %W=" },
-	{ Oextsh,  Ki, "movsw%k %H0, %=" },
-	{ Oextuh,  Ki, "movzw%k %H0, %=" },
-	{ Oextsb,  Ki, "movsb%k %B0, %=" },
-	{ Oextub,  Ki, "movzb%k %B0, %=" },
+	{ Oadd,    Ka, "+ADD%k %1, %=" },
+	{ Osub,    Ka, "-SUB%k %1, %=" },
+	{ Oand,    Ki, "+AND%k %1, %=" },
+	{ Oor,     Ki, "+OR%k %1, %=" },
+	{ Oxor,    Ki, "+XOR%k %1, %=" },
+	{ Osar,    Ki, "-SAR%k %B1, %=" },
+	{ Oshr,    Ki, "-SHR%k %B1, %=" },
+	{ Oshl,    Ki, "-SHL%k %B1, %=" },
+	{ Omul,    Ki, "+IMUL%k %1, %=" },
+	{ Omul,    Ks, "+MULSS %1, %=" },
+	{ Omul,    Kd, "+MULSD %1, %=" },
+	{ Odiv,    Ka, "-DIV%k %1, %=" },
+	{ Ostorel, Ka, "MOVQ %L0, %M1" },
+	{ Ostorew, Ka, "MOVL %W0, %M1" },
+	{ Ostoreh, Ka, "MOVW %H0, %M1" },
+	{ Ostoreb, Ka, "MOVB %B0, %M1" },
+	{ Ostores, Ka, "MOVSS %S0, %M1" },
+	{ Ostored, Ka, "MOVSD %D0, %M1" },
+	{ Oload,   Ka, "MOV%k %M0, %=" },
+	{ Oloadsw, Kl, "MOVSLQ %M0, %L=" },
+	{ Oloadsw, Kw, "MOVL %M0, %W=" },
+	{ Oloaduw, Ki, "MOVL %M0, %W=" },
+	{ Oloadsh, Ki, "MOVSW%k %M0, %=" },
+	{ Oloaduh, Ki, "MOVZW%k %M0, %=" },
+	{ Oloadsb, Ki, "MOVSB%k %M0, %=" },
+	{ Oloadub, Ki, "MOVZB%k %M0, %=" },
+	{ Oextsw,  Kl, "MOVSLQ %W0, %L=" },
+	{ Oextuw,  Kl, "MOVL %W0, %W=" },
+	{ Oextsh,  Ki, "MOVSW%k %H0, %=" },
+	{ Oextuh,  Ki, "MOVZW%k %H0, %=" },
+	{ Oextsb,  Ki, "MOVSB%k %B0, %=" },
+	{ Oextub,  Ki, "MOVZB%k %B0, %=" },
 
-	{ Oexts,   Kd, "cvtss2sd %0, %=" },
-	{ Otruncd, Ks, "cvtsd2ss %0, %=" },
-	{ Ostosi,  Ki, "cvttss2si%k %0, %=" },
-	{ Odtosi,  Ki, "cvttsd2si%k %0, %=" },
-	{ Oswtof,  Ka, "cvtsi2%k %W0, %=" },
-	{ Osltof,  Ka, "cvtsi2%k %L0, %=" },
-	{ Ocast,   Ki, "movq %D0, %L=" },
-	{ Ocast,   Ka, "movq %L0, %D=" },
+	{ Oexts,   Kd, "CVTSS2SD %0, %=" },
+	{ Otruncd, Ks, "CVTSD2SS %0, %=" },
+	{ Ostosi,  Ki, "CVTTSS2SI%k %0, %=" },
+	{ Odtosi,  Ki, "CVTTSD2SI%k %0, %=" },
+	{ Oswtof,  Ka, "CVTSI2%k %W0, %=" },
+	{ Osltof,  Ka, "CVTSI2%k %L0, %=" },
+	{ Ocast,   Ki, "MOVQ %D0, %L=" },
+	{ Ocast,   Ka, "MOVQ %L0, %D=" },
 
-	{ Oaddr,   Ki, "lea%k %M0, %=" },
-	{ Oswap,   Ki, "xchg%k %0, %1" },
-	{ Osign,   Kl, "cqto" },
-	{ Osign,   Kw, "cltd" },
-	{ Oxdiv,   Ki, "div%k %0" },
-	{ Oxidiv,  Ki, "idiv%k %0" },
-	{ Oxcmp,   Ks, "ucomiss %S0, %S1" },
-	{ Oxcmp,   Kd, "ucomisd %D0, %D1" },
-	{ Oxcmp,   Ki, "cmp%k %0, %1" },
-	{ Oxtest,  Ki, "test%k %0, %1" },
+	{ Oaddr,   Ki, "LEA%k %M0, %=" },
+	{ Oswap,   Ki, "XCHG%k %0, %1" },
+	{ Osign,   Kl, "CQTO" },
+	{ Osign,   Kw, "CLTD" },
+	{ Oxdiv,   Ki, "DIV%k %0" },
+	{ Oxidiv,  Ki, "IDIV%k %0" },
+	{ Oxcmp,   Ks, "UCOMISS %S0, %S1" },
+	{ Oxcmp,   Kd, "UCOMISD %D0, %D1" },
+	{ Oxcmp,   Ki, "CMP%k %0, %1" },
+	{ Oxtest,  Ki, "TEST%k %0, %1" },
 #define X(c, s) \
-	{ Oflag+c, Ki, "set" s " %B=\n\tmovzb%k %B=, %=" },
+	{ Oflag+c, Ki, "SET" s " %B=\n\tMOVZB%k %B=, %=" },
 	CMP(X)
 #undef X
 	{ NOp, 0, 0 }
 };
 
 static char *rname[][4] = {
-	[RAX] = {"rax", "eax", "ax", "al"},
-	[RBX] = {"rbx", "ebx", "bx", "bl"},
-	[RCX] = {"rcx", "ecx", "cx", "cl"},
-	[RDX] = {"rdx", "edx", "dx", "dl"},
-	[RSI] = {"rsi", "esi", "si", "sil"},
-	[RDI] = {"rdi", "edi", "di", "dil"},
-	[RBP] = {"rbp", "ebp", "bp", "bpl"},
-	[RSP] = {"rsp", "esp", "sp", "spl"},
-	[R8 ] = {"r8" , "r8d", "r8w", "r8b"},
-	[R9 ] = {"r9" , "r9d", "r9w", "r9b"},
-	[R10] = {"r10", "r10d", "r10w", "r10b"},
-	[R11] = {"r11", "r11d", "r11w", "r11b"},
-	[R12] = {"r12", "r12d", "r12w", "r12b"},
-	[R13] = {"r13", "r13d", "r13w", "r13b"},
-	[R14] = {"r14", "r14d", "r14w", "r14b"},
-	[R15] = {"r15", "r15d", "r15w", "r15b"},
+	[RAX] = {"%rax", "%eax", "%ax", "%al"},
+	[RBX] = {"%rbx", "%ebx", "%bx", "%bl"},
+	[RCX] = {"%rcx", "%ecx", "%cx", "%cl"},
+	[RDX] = {"%rdx", "%edx", "%dx", "%dl"},
+	[RSI] = {"%rsi", "%esi", "%si", "%sil"},
+	[RDI] = {"%rdi", "%edi", "%di", "%dil"},
+	[RBP] = {"%rbp", "%ebp", "%bp", "%bpl"},
+	[RSP] = {"%rsp", "%esp", "%sp", "%spl"},
+	[R8 ] = {"%r8" , "%r8d", "%r8w", "%r8b"},
+	[R9 ] = {"%r9" , "%r9d", "%r9w", "%r9b"},
+	[R10] = {"%r10", "%r10d", "%r10w", "%r10b"},
+	[R11] = {"%r11", "%r11d", "%r11w", "%r11b"},
+	[R12] = {"%r12", "%r12d", "%r12w", "%r12b"},
+	[R13] = {"%r13", "%r13d", "%r13w", "%r13b"},
+	[R14] = {"%r14", "%r14d", "%r14w", "%r14b"},
+	[R15] = {"%r15", "%r15d", "%r15w", "%r15b"},
 };
 
+static char *rname_plan9[] = {
+	[RAX] = "AX",
+	[RBX] = "BX",
+	[RCX] = "CX",
+	[RDX] = "DX",
+	[RSI] = "SI",
+	[RDI] = "DI",
+	[RBP] = "BP",
+	[RSP] = "SP",
+	[R8 ] = "R8",
+	[R9 ] = "R9",
+	[R10] = "R10",
+	[R11] = "R11",
+	[R12] = "R12",
+	[R13] = "R13",
+	[R14] = "R14",
+	[R15] = "R15",
+};
 
 static int
 slot(int s, Fn *fn)
@@ -184,11 +202,22 @@ regtoa(int reg, int sz)
 {
 	static char buf[6];
 
-	if (reg >= XMM0) {
-		sprintf(buf, "xmm%d", reg-XMM0);
-		return buf;
-	} else
-		return rname[reg][sz];
+	switch (asm.type) {
+	case Asmgas:
+		if (reg >= XMM0) {
+			sprintf(buf, "%%xmm%d", reg-XMM0);
+			return buf;
+		} else
+			return rname[reg][sz];
+		break;
+	case Asmplan9:
+		if (reg >= XMM0) {
+			sprintf(buf, "XMM%d", reg-XMM0);
+			return buf;
+		} else
+			return rname_plan9[reg];
+	}
+	die("unknown asm type");
 }
 
 static Ref
@@ -223,7 +252,7 @@ emitcopy(Ref r1, Ref r2, int k, Fn *fn, FILE *f)
 static void
 emitf(char *s, Ins *i, Fn *fn, FILE *f)
 {
-	static char clstoa[][3] = {"l", "q", "ss", "sd"};
+	static char clstoa[][3] = {"L", "Q", "SS", "SD"};
 	char c;
 	int sz;
 	Ref ref;
@@ -276,7 +305,7 @@ Next:
 		switch (rtype(ref)) {
 		case RTmp:
 			assert(isreg(ref));
-			fprintf(f, "%%%s", regtoa(ref.val, sz));
+			fprintf(f, "%s", regtoa(ref.val, sz));
 			break;
 		case RSlot:
 			fprintf(f, "%d(%%rbp)", slot(ref.val, fn));
@@ -294,11 +323,11 @@ Next:
 				emitcon(&m->offset, f);
 			fputc('(', f);
 			if (!req(m->base, R))
-				fprintf(f, "%%%s", regtoa(m->base.val, SLong));
+				fprintf(f, "%s", regtoa(m->base.val, SLong));
 			else if (m->offset.type == CAddr)
-				fprintf(f, "%%rip");
+				fprintf(f, asm.type == Asmgas ? "%%rip" : "SB");
 			if (!req(m->index, R))
-				fprintf(f, ", %%%s, %d",
+				fprintf(f, ", %s, %d",
 					regtoa(m->index.val, SLong),
 					m->scale
 				);
@@ -337,11 +366,11 @@ Next:
 			off = fn->con[ref.val];
 			emitcon(&off, f);
 			if (off.type == CAddr)
-				fprintf(f, "(%%rip)");
+				fprintf(f, "(%s)", asm.type == Asmgas ? "%rip" : "SB");
 			break;
 		case RTmp:
 			assert(isreg(ref));
-			fprintf(f, "(%%%s)", regtoa(ref.val, SLong));
+			fprintf(f, "(%s)", regtoa(ref.val, SLong));
 			break;
 		default:
 			die("unreachable");
@@ -412,7 +441,7 @@ emitins(Ins i, Fn *fn, FILE *f)
 				emitf("neg%k %=", &i, fn, f);
 			else
 				fprintf(f,
-					"\txorp%c %sfp%d(%%rip), %%%s\n",
+					"\txorp%c %sfp%d(%%rip), %s\n",
 					"xxsd"[i.cls],
 					asm.loc,
 					asm.stash(negmask[i.cls], 16),
@@ -461,7 +490,7 @@ emitins(Ins i, Fn *fn, FILE *f)
 		if (isreg(i.to)
 		&& t0 == RCon
 		&& fn->con[i.arg[0].val].type == CAddr) {
-			emitf("lea%k %M0, %=", &i, fn, f);
+			emitf("LEA%k %M0, %=", &i, fn, f);
 			break;
 		}
 		if (rtype(i.to) == RSlot
@@ -474,19 +503,21 @@ emitins(Ins i, Fn *fn, FILE *f)
 		}
 		/* conveniently, the assembler knows if it
 		 * should use movabsq when reading movq */
-		emitf("mov%k %0, %=", &i, fn, f);
+		emitf("MOV%k %0, %=", &i, fn, f);
 		break;
 	case Ocall:
 		/* calls simply have a weird syntax in AT&T
 		 * assembly... */
 		switch (rtype(i.arg[0])) {
 		case RCon:
-			fprintf(f, "\tcallq ");
+			fprintf(f, "\tCALL ");
 			emitcon(&fn->con[i.arg[0].val], f);
+			if (asm.type == Asmplan9)
+				fprintf(f, "(SB)");
 			fprintf(f, "\n");
 			break;
 		case RTmp:
-			emitf("callq *%L0", &i, fn, f);
+			emitf("CALL *%L0", &i, fn, f);
 			break;
 		default:
 			die("invalid call argument");
@@ -543,23 +574,32 @@ amd64_emitfn(Fn *fn, FILE *f)
 	uint64_t fs;
 	char *p;
 
-	p = fn->name[0] == '"' ? "" : asm.sym;
-	fprintf(f, ".text\n");
-	if (fn->export)
-		fprintf(f, ".globl %s%s\n", p, fn->name);
-	fprintf(f,
-		"%s%s:\n"
-		"\tpushq %%rbp\n"
-		"\tmovq %%rsp, %%rbp\n",
-		p, fn->name
-	);
 	fs = framesz(fn);
-	if (fs)
-		fprintf(f, "\tsub $%"PRIu64", %%rsp\n", fs);
+	switch (asm.type) {
+	case Asmgas:
+		p = fn->name[0] == '"' ? "" : asm.sym;
+		fprintf(f, ".text\n");
+		if (fn->export)
+			fprintf(f, ".globl %s%s\n", p, fn->name);
+		fprintf(f,
+			"%s%s:\n"
+			"\tpushq %%rbp\n"
+			"\tmovq %%rsp, %%rbp\n",
+			p, fn->name
+		);
+		if (fs)
+			fprintf(f, "\tsub $%"PRIu64", %%rsp\n", fs);
+		break;
+	case Asmplan9:
+		fprintf(f, "TEXT %s%s(SB),$%"PRIu64"\n",
+			fn->name, fn->export ? "" : "<>", fs);
+		break;
+	}
+
 	if (fn->vararg) {
 		o = -176;
 		for (r=T.rsave; r<&T.rsave[6]; r++, o+=8)
-			fprintf(f, "\tmovq %%%s, %d(%%rbp)\n", rname[*r][0], o);
+			fprintf(f, "\tmovq %s, %d(%%rbp)\n", rname[*r][0], o);
 		for (n=0; n<8; ++n, o+=16)
 			fprintf(f, "\tmovaps %%xmm%d, %d(%%rbp)\n", n, o);
 	}
@@ -589,10 +629,9 @@ amd64_emitfn(Fn *fn, FILE *f)
 					itmp.arg[0] = TMP(*r);
 					emitf("popq %L0", &itmp, fn, f);
 				}
-			fprintf(f,
-				"\tleave\n"
-				"\tret\n"
-			);
+			if (asm.type == Asmgas)
+				fprintf(f, "\tLEAVE\n");
+			fprintf(f, "\tRET\n");
 			break;
 		case Jjmp:
 		Jmp:

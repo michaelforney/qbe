@@ -153,32 +153,28 @@ selret(Blk *b, Fn *fn)
 static int
 argsclass(Ins *i0, Ins *i1, AClass *ac, int op, AClass *aret, Ref *env)
 {
-	int nint, ni, nsse, ns, n, *pn;
+	int c, ni, ns, n;
 	AClass *a;
 	Ins *i;
 
+	c = 0;
 	if (aret && aret->inmem)
-		nint = 5; /* hidden argument */
-	else
-		nint = 6;
-	nsse = 8;
+		c |= 4;
 	for (i=i0, a=ac; i<i1; i++, a++)
 		switch (i->op - op + Oarg) {
 		case Oarg:
-			if (KBASE(i->cls) == 0)
-				pn = &nint;
-			else
-				pn = &nsse;
-			if (*pn > 0) {
-				--*pn;
+			if (KBASE(i->cls) == 0 && (c & 4) == 0) {
 				a->inmem = 0;
-			} else
+				c |= 4;
+			} else {
 				a->inmem = 2;
+			}
 			a->align = 3;
 			a->size = 8;
 			a->cls[0] = i->cls;
 			break;
 		case Oargc:
+			/*
 			n = i->arg[0].val;
 			typclass(a, &typ[n]);
 			if (a->inmem)
@@ -194,6 +190,8 @@ argsclass(Ins *i0, Ins *i1, AClass *ac, int op, AClass *aret, Ref *env)
 				nsse -= ns;
 			} else
 				a->inmem = 1;
+			*/
+			abort();
 			break;
 		case Oarge:
 			if (op == Opar)
@@ -203,25 +201,23 @@ argsclass(Ins *i0, Ins *i1, AClass *ac, int op, AClass *aret, Ref *env)
 			break;
 		}
 
-	return ((6-nint) << 4) | ((8-nsse) << 8);
+	return c;
 }
 
-int amd64_sysv_rsave[] = {
-	RDI, RSI, RDX, RCX, R8, R9, R10, R11, RAX,
+int amd64_plan9_rsave[] = {
+	RBP, RDI, RSI, RDX, RCX, R8, R9, R10, R11, RAX, RBX, R12, R13, R14, R15,
 	XMM0, XMM1, XMM2, XMM3, XMM4, XMM5, XMM6, XMM7,
 	XMM8, XMM9, XMM10, XMM11, XMM12, XMM13, XMM14, -1
 };
-int amd64_sysv_rclob[] = {RBX, R12, R13, R14, R15, -1};
+int amd64_plan9_rclob[] = {-1};
 
-MAKESURE(sysv_arrays_ok,
-	sizeof amd64_sysv_rsave == (NGPS_SYSV+NFPS_SYSV+1) * sizeof(int) &&
-	sizeof amd64_sysv_rclob == (NCLR_SYSV+1) * sizeof(int)
-);
+_Static_assert(sizeof amd64_plan9_rsave == (NGPS_PLAN9+NFPS_PLAN9+1) * sizeof(int));
+_Static_assert(sizeof amd64_plan9_rclob == (NCLR_PLAN9+1) * sizeof(int));
 
 /* layout of call's second argument (RCall)
  *
  *  29     12    8    4  3  0
- *  |0...00|x|xxxx|xxxx|xx|xx|                  range
+ *  |0...00|x|xxxx|xxxx|xx|x|                  range
  *          |    |    |  |  ` gp regs returned (0..2)
  *          |    |    |  ` sse regs returned   (0..2)
  *          |    |    ` gp regs passed         (0..6)
@@ -230,23 +226,23 @@ MAKESURE(sysv_arrays_ok,
  */
 
 bits
-amd64_sysv_retregs(Ref r, int p[2])
+amd64_plan9_retregs(Ref r, int p[2])
 {
 	bits b;
 	int ni, nf;
 
 	assert(rtype(r) == RCall);
 	b = 0;
-	ni = r.val & 3;
-	nf = (r.val >> 2) & 3;
-	if (ni >= 1)
+	ni = 0;
+	nf = 0;
+	if (r.val & 1) {
 		b |= BIT(RAX);
-	if (ni >= 2)
-		b |= BIT(RDX);
-	if (nf >= 1)
+		ni++;
+	}
+	if (r.val & 2) {
 		b |= BIT(XMM0);
-	if (nf >= 2)
-		b |= BIT(XMM1);
+		nf++;
+	}
 	if (p) {
 		p[0] = ni;
 		p[1] = nf;
@@ -255,32 +251,35 @@ amd64_sysv_retregs(Ref r, int p[2])
 }
 
 bits
-amd64_sysv_argregs(Ref r, int p[2])
+amd64_plan9_argregs(Ref r, int p[2])
 {
 	bits b;
-	int j, ni, nf, ra;
+	int ni, nf;
 
 	assert(rtype(r) == RCall);
 	b = 0;
-	ni = (r.val >> 4) & 15;
-	nf = (r.val >> 8) & 15;
-	ra = (r.val >> 12) & 1;
-	for (j=0; j<ni; j++)
-		b |= BIT(amd64_sysv_rsave[j]);
-	for (j=0; j<nf; j++)
-		b |= BIT(XMM0+j);
+	ni = 0;
+	nf = 0;
+	if (r.val & 4) {
+		b |= BIT(RBP);
+		ni++;
+	}
+	if (r.val & 8) {
+		b |= BIT(RAX);
+		ni++;
+	}
 	if (p) {
-		p[0] = ni + ra;
+		p[0] = ni;
 		p[1] = nf;
 	}
-	return b | (ra ? BIT(RAX) : 0);
+	return b;
 }
 
 static Ref
 rarg(int ty, int *ni, int *ns)
 {
 	if (KBASE(ty) == 0)
-		return TMP(amd64_sysv_rsave[(*ni)++]);
+		return TMP(amd64_plan9_rsave[(*ni)++]);
 	else
 		return TMP(XMM0 + (*ns)++);
 }
@@ -308,7 +307,7 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 	for (stk=0, a=&ac[i1-i0]; a>ac;)
 		if ((--a)->inmem) {
 			if (a->align > 4)
-				err("sysv abi requires alignments of 16 or less");
+				err("plan9 abi requires alignments of 16 or less");
 			stk += a->size;
 			if (a->align == 4)
 				stk += stk & 15;
@@ -361,7 +360,7 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 	envc = !req(R, env);
 	varc = i1->op == Ovacall;
 	if (varc && envc)
-		err("sysv abi does not support variadic env calls");
+		err("plan9 abi does not support variadic env calls");
 	ca |= (varc | envc) << 12;
 	emit(Ocall, i1->cls, R, i1->arg[0], CALL(ca));
 	if (envc)
@@ -375,7 +374,7 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 	for (i=i0, a=ac; i<i1; i++, a++) {
 		if (a->inmem)
 			continue;
-		r1 = rarg(a->cls[0], &ni, &ns);
+		r1 = TMP(RBP);
 		if (i->op == Oargc) {
 			if (a->size > 8) {
 				r2 = rarg(a->cls[1], &ni, &ns);
@@ -427,7 +426,6 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 		fa = argsclass(i0, i1, ac, Opar, &aret, &env);
 	} else
 		fa = argsclass(i0, i1, ac, Opar, 0, &env);
-	fn->reg = amd64_sysv_argregs(CALL(fa), 0);
 
 	for (i=i0, a=ac; i<i1; i++, a++) {
 		if (i->op != Oparc || a->inmem)
@@ -455,7 +453,7 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 		switch (a->inmem) {
 		case 1:
 			if (a->align > 4)
-				err("sysv abi requires alignments of 16 or less");
+				err("plan9 abi requires alignments of 16 or less");
 			if (a->align == 4)
 				s = (s+3) & -4;
 			fn->tmp[i->to.val].slot = -s;
@@ -636,7 +634,7 @@ selvastart(Fn *fn, int fa, Ref ap)
 }
 
 void
-amd64_sysv_abi(Fn *fn)
+amd64_plan9_abi(Fn *fn)
 {
 	Blk *b;
 	Ins *i, *i0, *ip;

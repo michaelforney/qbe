@@ -6,6 +6,7 @@
 Target T;
 
 extern Target T_amd64_sysv;
+extern Target T_amd64_plan9;
 extern Target T_arm64;
 
 Asm asm;
@@ -19,6 +20,7 @@ static struct TMap {
 	Target *T;
 } tmap[] = {
 	{ "amd64_sysv", &T_amd64_sysv },
+	{ "amd64_plan9", &T_amd64_plan9 },
 	{ "arm64", &T_arm64 },
 	{ 0, 0 }
 };

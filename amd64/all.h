@@ -41,9 +41,14 @@ enum Amd64Reg {
 
 	NFPR = XMM14 - XMM0 + 1, /* reserve XMM15 */
 	NGPR = RSP - RAX + 1,
-	NGPS = R11 - RAX + 1,
-	NFPS = NFPR,
-	NCLR = R15 - RBX + 1,
+
+	NGPS_SYSV = R11 - RAX + 1,
+	NFPS_SYSV = NFPR,
+	NCLR_SYSV = R15 - RBX + 1,
+
+	NGPS_PLAN9 = RBP - RAX + 1,
+	NFPS_PLAN9 = NFPR,
+	NCLR_PLAN9 = 0,
 };
 MAKESURE(reg_not_tmp, XMM15 < (int)Tmp0);
 
@@ -62,6 +67,13 @@ extern int amd64_sysv_rclob[];
 bits amd64_sysv_retregs(Ref, int[2]);
 bits amd64_sysv_argregs(Ref, int[2]);
 void amd64_sysv_abi(Fn *);
+
+/* plan9.c (abi) */
+extern int amd64_plan9_rsave[];
+extern int amd64_plan9_rclob[];
+bits amd64_plan9_retregs(Ref, int[2]);
+bits amd64_plan9_argregs(Ref, int[2]);
+void amd64_plan9_abi(Fn *);
 
 /* isel.c */
 void amd64_isel(Fn *);

@@ -326,7 +326,7 @@ framelayout(E *e)
 	uint o;
 	uint64_t f;
 
-	for (o=0, r=arm64_rclob; *r>=0; r++)
+	for (o=0, r=T.rclob; *r>=0; r++)
 		o += 1 & (e->fn->reg >> *r);
 	f = e->fn->slot;
 	f = (f + 3) & -4;
@@ -411,7 +411,7 @@ arm64_emitfn(Fn *fn, FILE *out)
 			e->frame
 		);
 	fputs("\tadd\tx29, sp, 0\n", e->f);
-	for (o=e->frame+16, r=arm64_rclob; *r>=0; r++)
+	for (o=e->frame+16, r=T.rclob; *r>=0; r++)
 		if (e->fn->reg & BIT(*r))
 			fprintf(e->f,
 				"\tstr\t%s, [sp, %"PRIu64"]\n",
@@ -426,7 +426,7 @@ arm64_emitfn(Fn *fn, FILE *out)
 		lbl = 1;
 		switch (b->jmp.type) {
 		case Jret0:
-			for (o=e->frame+16, r=arm64_rclob; *r>=0; r++)
+			for (o=e->frame+16, r=T.rclob; *r>=0; r++)
 				if (e->fn->reg & BIT(*r))
 					fprintf(e->f,
 						"\tldr\t%s, [sp, %"PRIu64"]\n",

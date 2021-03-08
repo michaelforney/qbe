@@ -517,11 +517,12 @@ emitins(Ins i, Fn *fn, FILE *f)
 static uint64_t
 framesz(Fn *fn)
 {
-	uint64_t i, o, f;
+	int i;
+	uint64_t o, f;
 
 	/* specific to NAlign == 3 */
-	for (i=0, o=0; i<NCLR; i++)
-		o ^= 1 & (fn->reg >> amd64_sysv_rclob[i]);
+	for (i=0, o=0; i<T.nrclob; i++)
+		o ^= 1 & (fn->reg >> T.rclob[i]);
 	f = fn->slot;
 	f = (f + 3) & -4;
 	return 4*f + 8*o + 176*fn->vararg;
@@ -557,12 +558,12 @@ amd64_emitfn(Fn *fn, FILE *f)
 		fprintf(f, "\tsub $%"PRIu64", %%rsp\n", fs);
 	if (fn->vararg) {
 		o = -176;
-		for (r=amd64_sysv_rsave; r<&amd64_sysv_rsave[6]; r++, o+=8)
+		for (r=T.rsave; r<&T.rsave[6]; r++, o+=8)
 			fprintf(f, "\tmovq %%%s, %d(%%rbp)\n", rname[*r][0], o);
 		for (n=0; n<8; ++n, o+=16)
 			fprintf(f, "\tmovaps %%xmm%d, %d(%%rbp)\n", n, o);
 	}
-	for (r=amd64_sysv_rclob; r<&amd64_sysv_rclob[NCLR]; r++)
+	for (r=T.rclob; r<&T.rclob[T.nrclob]; r++)
 		if (fn->reg & BIT(*r)) {
 			itmp.arg[0] = TMP(*r);
 			emitf("pushq %L0", &itmp, fn, f);
@@ -583,7 +584,7 @@ amd64_emitfn(Fn *fn, FILE *f)
 					"\tsubq $%"PRIu64", %%rsp\n",
 					fs
 				);
-			for (r=&amd64_sysv_rclob[NCLR]; r>amd64_sysv_rclob;)
+			for (r=&T.rclob[T.nrclob]; r>T.rclob;)
 				if (fn->reg & BIT(*--r)) {
 					itmp.arg[0] = TMP(*r);
 					emitf("popq %L0", &itmp, fn, f);

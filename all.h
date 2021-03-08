@@ -48,6 +48,8 @@ struct Target {
 	int nrglob;
 	int *rsave; /* caller-save */
 	int nrsave[2];
+	int *rclob;
+	int nrclob;
 	bits (*retregs)(Ref, int[2]);
 	bits (*argregs)(Ref, int[2]);
 	int (*memargs)(int);

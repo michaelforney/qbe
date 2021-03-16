@@ -390,7 +390,7 @@ struct Dat {
 		float flts;
 		char *str;
 		struct {
-			char *nam;
+			char *name;
 			int64_t off;
 		} ref;
 	} u;

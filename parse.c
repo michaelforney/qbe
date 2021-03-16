@@ -979,7 +979,7 @@ parsedatref(Dat *d)
 	int t;
 
 	d->isref = 1;
-	d->u.ref.nam = tokval.str;
+	d->u.ref.name = tokval.str;
 	d->u.ref.off = 0;
 	t = peek();
 	if (t == Tplus) {

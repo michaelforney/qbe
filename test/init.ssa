@@ -6,7 +6,7 @@ function $init() {
 	ret
 }
 
-data section ".init_array" $initfns = align 8 { l $init }
+data $initfns = section ".init_array" align 8 { l $init }
 
 # >>> driver
 # int x = 1;

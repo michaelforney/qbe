@@ -254,7 +254,7 @@ their size between curly braces.
 
     `bnf
     DATADEF :=
-        ['export'] 'data' [SECTION [FLAGS]] $IDENT '=' ['align' NUMBER]
+        ['export'] 'data' $IDENT '=' [SECTION [FLAGS]] ['align' NUMBER]
         '{'
             ( EXTTY DATAITEM+
             | 'z'   NUMBER ),
@@ -314,7 +314,7 @@ Here are various examples of data definitions.
     data $c = { l -1, l $c }
 
     # An object written to the .bss section
-    data section ".bss" $d = { w 0 }
+    data $d = section ".bss" { w 0 }
 
 ~ Functions
 ~~~~~~~~~~~

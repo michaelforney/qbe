@@ -38,10 +38,10 @@ enum {
 	Tjnz,
 	Tret,
 	Texport,
-	Tsection,
 	Tfunc,
 	Ttype,
 	Tdata,
+	Tsection,
 	Talign,
 	Tl,
 	Tw,
@@ -88,10 +88,10 @@ static char *kwmap[Ntok] = {
 	[Tjnz] = "jnz",
 	[Tret] = "ret",
 	[Texport] = "export",
-	[Tsection] = "section",
 	[Tfunc] = "function",
 	[Ttype] = "type",
 	[Tdata] = "data",
+	[Tsection] = "section",
 	[Talign] = "align",
 	[Tl] = "l",
 	[Tw] = "w",
@@ -1011,6 +1011,9 @@ parsedat(void cb(Dat *), int export)
 	d.section = NULL;
 	d.secflags = NULL;
 
+	if (nextnl() != Tglo || nextnl() != Teq)
+		err("data name, then = expected");
+	strcpy(s, tokval.str);
 	t = nextnl();
 	if (t == Tsection) {
 		if (nextnl() != Tstr)
@@ -1022,13 +1025,8 @@ parsedat(void cb(Dat *), int export)
 			t = nextnl();
 		}
 	}
-
-	if (t != Tglo || nextnl() != Teq)
-		die("data name, then = expected");
 	cb(&d);
 
-	strcpy(s, tokval.str);
-	t = nextnl();
 	if (t == Talign) {
 		if (nextnl() != Tint)
 			err("alignment expected");

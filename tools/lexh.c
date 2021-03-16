@@ -24,10 +24,10 @@ char *tok[] = {
 	"cgtd", "cged", "cned", "ceqd", "cod", "cuod",
 	"vaarg", "vastart", "...", "env",
 
-	"call", "phi", "jmp", "jnz", "ret", "export", "section",
-	"function", "type", "data", "align", "l", "w",
-	"h", "b", "d", "s", "z", "loadw", "loadl", "loads",
-	"loadd", "alloc1", "alloc2",
+	"call", "phi", "jmp", "jnz", "ret", "export",
+	"function", "type", "data", "section", "align",
+	"l", "w", "h", "b", "d", "s", "z", "loadw", "loadl",
+	"loads", "loadd", "alloc1", "alloc2",
 
 };
 enum {

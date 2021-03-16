@@ -393,12 +393,14 @@ struct Dat {
 			char *name;
 			int64_t off;
 		} ref;
+		struct {
+			char *name;
+			char *flags;
+		} sec;
 	} u;
 	char isref;
 	char isstr;
 	char export;
-	char *section;
-	char *secflags;
 };
 
 /* main.c */

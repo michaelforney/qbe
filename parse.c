@@ -1008,20 +1008,20 @@ parsedat(void cb(Dat *), int export)
 	d.isstr = 0;
 	d.isref = 0;
 	d.export = export;
-	d.section = NULL;
-	d.secflags = NULL;
 
 	if (nextnl() != Tglo || nextnl() != Teq)
 		err("data name, then = expected");
 	strcpy(s, tokval.str);
 	t = nextnl();
+	d.u.sec.name = 0;
+	d.u.sec.flags = 0;
 	if (t == Tsection) {
 		if (nextnl() != Tstr)
 			err("section \"name\" expected");
-		d.section = tokval.str;
+		d.u.sec.name = tokval.str;
 		t = nextnl();
 		if (t == Tstr) {
-			d.secflags = tokval.str;
+			d.u.sec.flags = tokval.str;
 			t = nextnl();
 		}
 	}

@@ -438,11 +438,19 @@ arm64_emitfn(Fn *fn, FILE *out)
 		);
 	fputs("\tadd\tx29, sp, 0\n", e->f);
 	for (o=e->frame+16, r=arm64_rclob; *r>=0; r++)
-		if (e->fn->reg & BIT(*r))
-			fprintf(e->f,
-				"\tstr\t%s, [sp, %"PRIu64"]\n",
-				rname(*r, Kx), o -= 8
-			);
+		if (e->fn->reg & BIT(*r)) {
+			if (o <= 32760)
+				fprintf(e->f,
+					"\tstr\t%s, [sp, %"PRIu64"]\n",
+					rname(*r, Kx), o -= 8
+				);
+			else
+				fprintf(e->f,
+					"\tmov\tx16, #%"PRIu64"\n"
+					"\tstr\t%s, [sp, x16]\n",
+					o -= 8, rname(*r, Kx)
+				);
+		}
 
 	for (lbl=0, b=e->fn->start; b; b=b->link) {
 		if (lbl || b->npred > 1)
@@ -453,11 +461,19 @@ arm64_emitfn(Fn *fn, FILE *out)
 		switch (b->jmp.type) {
 		case Jret0:
 			for (o=e->frame+16, r=arm64_rclob; *r>=0; r++)
-				if (e->fn->reg & BIT(*r))
-					fprintf(e->f,
-						"\tldr\t%s, [sp, %"PRIu64"]\n",
-						rname(*r, Kx), o -= 8
-					);
+				if (e->fn->reg & BIT(*r)) {
+					if (o <= 32760)
+						fprintf(e->f,
+							"\tldr\t%s, [sp, %"PRIu64"]\n",
+							rname(*r, Kx), o -= 8
+						);
+					else
+						fprintf(e->f,
+							"\tmov\tx16, #%"PRIu64"\n"
+							"\tldr\t%s, [sp, x16]\n",
+							o -= 8, rname(*r, Kx)
+						);
+				}
 			o = e->frame + 16;
 			if (e->fn->vararg)
 				o += 192;

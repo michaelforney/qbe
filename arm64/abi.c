@@ -425,6 +425,7 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 	curi = &insb[NIns];
 
 	cty = argsclass(i0, i1, ca, &env);
+	fn->reg = arm64_argregs(CALL(cty), 0);
 
 	il = 0;
 	t = tmp;

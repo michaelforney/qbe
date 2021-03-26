@@ -228,7 +228,7 @@ emitf(char *s, Ins *i, E *e)
 				fprintf(e->f, "[%s]", rname(r.val, Kl));
 				break;
 			case RSlot:
-				fprintf(e->f, "[sp, %"PRIu64"]", slot(r.val, e));
+				fprintf(e->f, "[x29, %"PRIu64"]", slot(r.val, e));
 				break;
 			}
 			break;

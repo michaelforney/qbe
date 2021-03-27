@@ -173,11 +173,13 @@ limit(BSet *b, int k, BSet *f)
 		bsclr(b, t);
 		tarr[i++] = t;
 	}
-	if (!f)
-		qsort(tarr, nt, sizeof tarr[0], tcmp0);
-	else {
-		fst = f;
-		qsort(tarr, nt, sizeof tarr[0], tcmp1);
+	if (nt > 1) {
+		if (!f)
+			qsort(tarr, nt, sizeof tarr[0], tcmp0);
+		else {
+			fst = f;
+			qsort(tarr, nt, sizeof tarr[0], tcmp1);
+		}
 	}
 	for (i=0; i<k && i<nt; i++)
 		bsset(b, tarr[i]);
@@ -395,7 +397,6 @@ spill(Fn *fn)
 		bscopy(b->out, v);
 
 		/* 2. process the block instructions */
-		r = v->t[0];
 		curi = &insb[NIns];
 		for (i=&b->ins[b->nins]; i!=b->ins;) {
 			i--;
@@ -467,7 +468,10 @@ spill(Fn *fn)
 			if (r)
 				sethint(v, r);
 		}
-		assert(r == T.rglob || b == fn->start);
+		if (b == fn->start)
+			assert(v->t[0] == (T.rglob | fn->reg));
+		else
+			assert(v->t[0] == T.rglob);
 
 		for (p=b->phi; p; p=p->link) {
 			assert(rtype(p->to) == RTmp);

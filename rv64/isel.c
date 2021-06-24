@@ -1,7 +1,7 @@
 #include "all.h"
 
 static void
-fixarg(Ref *pr, int cls, Fn *fn)
+fixarg(Ref *pr, int k, Fn *fn)
 {
 	char buf[32];
 	Ref r0, r1, r2;
@@ -11,19 +11,19 @@ fixarg(Ref *pr, int cls, Fn *fn)
 	r0 = *pr;
 	switch (rtype(r0)) {
 	case RCon:
-		r1 = newtmp("isel", cls, fn);
-		if (KBASE(cls) == 0) {
-			emit(Ocopy, cls, r1, r0, R);
+		r1 = newtmp("isel", k, fn);
+		if (KBASE(k) == 0) {
+			emit(Ocopy, k, r1, r0, R);
 		} else {
 			c = &fn->con[r0.val];
-			n = gasstash(&c->bits, KWIDE(cls) ? 8 : 4);
+			n = gasstash(&c->bits, KWIDE(k) ? 8 : 4);
 			vgrow(&fn->con, ++fn->ncon);
 			c = &fn->con[fn->ncon-1];
 			sprintf(buf, "fp%d", n);
 			*c = (Con){.type = CAddr, .local = 1};
 			c->label = intern(buf);
 			r2 = newtmp("isel", Kl, fn);
-			emit(Oload, cls, r1, r2, R);
+			emit(Oload, k, r1, r2, R);
 			emit(Ocopy, Kl, r2, CON(c-fn->con), R);
 		}
 		*pr = r1;
@@ -40,23 +40,23 @@ fixarg(Ref *pr, int cls, Fn *fn)
 }
 
 static void
-selcmp(Ins i, int cls, int op, Fn *fn)
+selcmp(Ins i, int k, int op, Fn *fn)
 {
 	Ref r;
 	int sign, swap, neg;
 
 	switch (op) {
 	case Cieq:
-		r = newtmp("isel", cls, fn);
+		r = newtmp("isel", k, fn);
 		emit(Oreqz, i.cls, i.to, r, R);
-		emit(Oxor, cls, r, i.arg[0], i.arg[1]);
-		fixarg(&curi->arg[0], cls, fn);
+		emit(Oxor, k, r, i.arg[0], i.arg[1]);
+		fixarg(&curi->arg[0], k, fn);
 		return;
 	case Cine:
-		r = newtmp("isel", cls, fn);
+		r = newtmp("isel", k, fn);
 		emit(Ornez, i.cls, i.to, r, R);
-		emit(Oxor, cls, r, i.arg[0], i.arg[1]);
-		fixarg(&curi->arg[0], cls, fn);
+		emit(Oxor, k, r, i.arg[0], i.arg[1]);
+		fixarg(&curi->arg[0], k, fn);
 		return;
 	case Cisge: sign = 1, swap = 0, neg = 1; break;
 	case Cisgt: sign = 1, swap = 1, neg = 0; break;
@@ -80,7 +80,7 @@ selcmp(Ins i, int cls, int op, Fn *fn)
 	}
 	i.op = sign ? Ocsltl : Ocultl;
 	emiti(i);
-	fixarg(&curi->arg[0], cls, fn);
+	fixarg(&curi->arg[0], k, fn);
 }
 
 static void

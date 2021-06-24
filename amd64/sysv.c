@@ -373,7 +373,7 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 	if (ra && aret.inmem)
 		emit(Ocopy, Kl, rarg(Kl, &ni, &ns), ra->i.to, R); /* pass hidden argument */
 	for (i=i0, a=ac; i<i1; i++, a++) {
-		if (a->inmem)
+		if (i->op == Oargv || a->inmem)
 			continue;
 		r1 = rarg(a->cls[0], &ni, &ns);
 		if (i->op == Oargc) {
@@ -393,7 +393,7 @@ selcall(Fn *fn, Ins *i0, Ins *i1, RAlloc **rap)
 
 	r = newtmp("abi", Kl, fn);
 	for (i=i0, a=ac, off=0; i<i1; i++, a++) {
-		if (!a->inmem)
+		if (i->op == Oargv || !a->inmem)
 			continue;
 		if (i->op == Oargc) {
 			if (a->align == 4)

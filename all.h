@@ -176,7 +176,7 @@ enum {
 #define isload(o) INRANGE(o, Oloadsb, Oload)
 #define isext(o) INRANGE(o, Oextsb, Oextuw)
 #define ispar(o) INRANGE(o, Opar, Opare)
-#define isarg(o) INRANGE(o, Oarg, Oarge)
+#define isarg(o) INRANGE(o, Oarg, Oargv)
 #define isret(j) INRANGE(j, Jret0, Jretc)
 
 enum Class {

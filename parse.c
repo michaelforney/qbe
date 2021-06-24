@@ -450,53 +450,64 @@ parsecls(int *tyn)
 static int
 parserefl(int arg)
 {
-	int k, ty, env, hasenv;
+	int k, ty, env, hasenv, vararg;
 	Ref r;
 
 	hasenv = 0;
+	vararg = 0;
 	expect(Tlparen);
-	while (peek() != Trparen && peek() != Tdots) {
+	while (peek() != Trparen) {
 		if (curi - insb >= NIns)
 			err("too many instructions (1)");
-		env = peek() == Tenv;
-		if (env) {
+		if (peek() == Tdots) {
+			if (vararg)
+				err("only one '...' allowed");
+			vararg = 1;
+			if (arg) {
+				*curi = (Ins){Oargv, Kw, R, {R}};
+				curi++;
+			}
 			next();
-			k = Kl;
-		} else
-			k = parsecls(&ty);
-		r = parseref();
-		if (req(r, R))
-			err("invalid argument");
-		if (hasenv && env)
-			err("only one environment allowed");
-		if (!arg && rtype(r) != RTmp)
-			err("invalid function parameter");
-		if (k == 4)
-			if (arg)
-				*curi = (Ins){Oargc, Kl, R, {TYPE(ty), r}};
+		} else {
+			if (!arg && vararg)
+				err("no parameters allowed after '...'");
+			env = peek() == Tenv;
+			if (env) {
+				next();
+				k = Kl;
+			} else
+				k = parsecls(&ty);
+			r = parseref();
+			if (req(r, R))
+				err("invalid argument");
+			if (hasenv && env)
+				err("only one environment allowed");
+			if (!arg && rtype(r) != RTmp)
+				err("invalid function parameter");
+			if (k == 4)
+				if (arg)
+					*curi = (Ins){Oargc, Kl, R, {TYPE(ty), r}};
+				else
+					*curi = (Ins){Oparc, Kl, r, {TYPE(ty)}};
+			else if (env)
+				if (arg)
+					*curi = (Ins){Oarge, k, R, {r}};
+				else
+					*curi = (Ins){Opare, k, r, {R}};
 			else
-				*curi = (Ins){Oparc, Kl, r, {TYPE(ty)}};
-		else if (env)
-			if (arg)
-				*curi = (Ins){Oarge, k, R, {r}};
-			else
-				*curi = (Ins){Opare, k, r, {R}};
-		else
-			if (arg)
-				*curi = (Ins){Oarg, k, R, {r}};
-			else
-				*curi = (Ins){Opar, k, r, {R}};
-		curi++;
-		hasenv |= env;
+				if (arg)
+					*curi = (Ins){Oarg, k, R, {r}};
+				else
+					*curi = (Ins){Opar, k, r, {R}};
+			curi++;
+			hasenv |= env;
+		}
 		if (peek() == Trparen)
 			break;
 		expect(Tcomma);
 	}
-	if (next() == Tdots) {
-		expect(Trparen);
-		return 1;
-	}
-	return 0;
+	expect(Trparen);
+	return vararg;
 }
 
 static Blk *

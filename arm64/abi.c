@@ -336,6 +336,8 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 
 	stk = 0;
 	for (i=i0, c=ca; i<i1; i++, c++) {
+		if (i->op == Oargv)
+			continue;
 		if (c->class & Cptr) {
 			i->arg[0] = newtmp("abi", Kl, fn);
 			stkblob(i->arg[0], c, fn, ilp);
@@ -383,7 +385,7 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 		emit(Ocopy, Kl, TMP(R8), i1->to, R);
 
 	for (i=i0, c=ca; i<i1; i++, c++) {
-		if ((c->class & Cstk) != 0)
+		if (i->op == Oargv || (c->class & Cstk) != 0)
 			continue;
 		if (i->op != Oargc)
 			emit(Ocopy, *c->cls, TMP(*c->reg), i->arg[0], R);
@@ -393,7 +395,7 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 
 	off = 0;
 	for (i=i0, c=ca; i<i1; i++, c++) {
-		if ((c->class & Cstk) == 0)
+		if (i->op == Oargv || (c->class & Cstk) == 0)
 			continue;
 		if (i->op != Oargc) {
 			r = newtmp("abi", Kl, fn);
@@ -407,7 +409,7 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 		emit(Osub, Kl, TMP(SP), TMP(SP), rstk);
 
 	for (i=i0, c=ca; i<i1; i++, c++)
-		if (c->class & Cptr)
+		if (i->op != Oargv && c->class & Cptr)
 			blit(i->arg[0], 0, i->arg[1], c->t->size, fn);
 }
 

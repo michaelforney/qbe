@@ -117,7 +117,7 @@ selret(Blk *b, Fn *fn)
 static int
 argsclass(Ins *i0, Ins *i1, Class *carg)
 {
-	int ngp, nfp, *gp, *fp;
+	int k, ngp, nfp, *gp, *fp, vararg;
 	Class *c;
 	Ins *i;
 
@@ -125,21 +125,28 @@ argsclass(Ins *i0, Ins *i1, Class *carg)
 	fp = fpreg;
 	ngp = 8;
 	nfp = 8;
+	vararg = 0;
 	for (i=i0, c=carg; i<i1; i++, c++) {
 		switch (i->op) {
 		case Opar:
 		case Oarg:
 			c->cls[0] = i->cls;
 			c->size = 8;
-			if (KBASE(i->cls) == 0 && ngp > 0) {
+			/* variadic float args are passed in int regs */
+			k = !vararg ? i->cls : KWIDE(i->cls) ? Kl : Kw;
+			if (KBASE(k) == 0 && ngp > 0) {
 				ngp--;
 				c->reg[0] = *gp++;
-			} else if (KBASE(i->cls) == 1 && nfp > 0) {
+			} else if (KBASE(k) == 1 && nfp > 0) {
 				nfp--;
 				c->reg[0] = *fp++;
 			} else {
 				c->class |= Cstk;
 			}
+			break;
+		case Oargv:
+			/* subsequent arguments are variadic */
+			vararg = 1;
 			break;
 		case Oparc:
 		case Oargc:
@@ -154,7 +161,8 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 {
 	Ins *i;
 	Class *ca, *c;
-	int cty;
+	Ref r;
+	int k, cty, vararg;
 	uint64_t stk;
 
 	ca = alloc((i1-i0) * sizeof ca[0]);
@@ -185,13 +193,30 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 	emit(Ocall, 0, R, i1->arg[0], CALL(cty));
 
 	/* move arguments into registers */
+	vararg = 0;
 	for (i=i0, c=ca; i<i1; i++, c++) {
+		if (i->op == Oargv) {
+			vararg = 1;
+			continue;
+		}
 		if (c->class & Cstk)
 			continue;
 		if (i->op == Oargc)
 			abort();  /* XXX: implement */
-		else
+		else if (vararg && KBASE(*c->cls) == 1) {
+			k = KWIDE(*c->cls) ? Kl : Kw;
+			r = newtmp("abi", k, fn);
+			emit(Ocopy, k, TMP(c->reg[0]), r, R);
+			c->reg[0] = r.val;
+		} else {
 			emit(Ocopy, *c->cls, TMP(*c->reg), i->arg[0], R);
+		}
+	}
+	if (vararg) {
+		for (i=i0, c=ca; i<i1; i++, c++) {
+			if (i->op != Oargv && KBASE(*c->cls) == 1)
+				emit(Ocast, KWIDE(*c->cls) ? Kl : Kw, TMP(*c->reg), i->arg[0], R);
+		}
 	}
 }
 

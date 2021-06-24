@@ -51,12 +51,14 @@ selcmp(Ins i, int k, int op, Fn *fn)
 		emit(Oreqz, i.cls, i.to, r, R);
 		emit(Oxor, k, r, i.arg[0], i.arg[1]);
 		fixarg(&curi->arg[0], k, fn);
+		fixarg(&curi->arg[1], k, fn);
 		return;
 	case Cine:
 		r = newtmp("isel", k, fn);
 		emit(Ornez, i.cls, i.to, r, R);
 		emit(Oxor, k, r, i.arg[0], i.arg[1]);
 		fixarg(&curi->arg[0], k, fn);
+		fixarg(&curi->arg[1], k, fn);
 		return;
 	case Cisge: sign = 1, swap = 0, neg = 1; break;
 	case Cisgt: sign = 1, swap = 1, neg = 0; break;
@@ -81,6 +83,7 @@ selcmp(Ins i, int k, int op, Fn *fn)
 	i.op = sign ? Ocsltl : Ocultl;
 	emiti(i);
 	fixarg(&curi->arg[0], k, fn);
+	fixarg(&curi->arg[1], k, fn);
 }
 
 static void

@@ -68,8 +68,23 @@ selcmp(Ins i, int k, int op, Fn *fn)
 	case Ciugt: sign = 0, swap = 1, neg = 0; break;
 	case Ciule: sign = 0, swap = 1, neg = 1; break;
 	case Ciult: sign = 0, swap = 0, neg = 0; break;
+	case NCmpI + Cfeq:
+	case NCmpI + Cfge:
+	case NCmpI + Cfgt:
+	case NCmpI + Cfle:
+	case NCmpI + Cflt:
+	case NCmpI + Cfo:
+	case NCmpI + Cfuo:
+		sign = 0, swap = 0, neg = 0;
+		break;
+	case NCmpI + Cfne:
+		sign = 0, swap = 0, neg = 1;
+		i.op = KWIDE(k) ? Oceqd : Oceqs;
+		break;
 	default: abort();  /* XXX: implement */
 	}
+	if (op < NCmpI)
+		i.op = sign ? Ocsltl : Ocultl;
 	if (swap) {
 		r = i.arg[0];
 		i.arg[0] = i.arg[1];
@@ -80,7 +95,6 @@ selcmp(Ins i, int k, int op, Fn *fn)
 		emit(Oxor, i.cls, i.to, r, getcon(1, fn));
 		i.to = r;
 	}
-	i.op = sign ? Ocsltl : Ocultl;
 	emiti(i);
 	fixarg(&curi->arg[0], k, fn);
 	fixarg(&curi->arg[1], k, fn);
@@ -104,7 +118,7 @@ sel(Ins i, Fn *fn)
 		break;
 	default:
 	Emit:
-		if (iscmp(i.op, &ck, &cc) && KBASE(ck) == 0) {
+		if (iscmp(i.op, &ck, &cc)) {
 			selcmp(i, ck, cc, fn);
 			break;
 		}

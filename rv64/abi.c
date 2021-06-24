@@ -24,7 +24,7 @@ struct Insl {
 struct Params {
 	uint ngp;
 	uint nfp;
-	uint nstk;
+	uint stk; /* stack offset for varargs */
 };
 
 static int gpreg[] = { A0,  A1,  A2,  A3,  A4,  A5,  A6,  A7};
@@ -209,7 +209,7 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 	cty = argsclass(i0, i1, ca);
 	fn->reg = rv64_argregs(CALL(cty), 0);
 
-	for (i=i0, c=ca, s=4; i<i1; i++, c++) {
+	for (i=i0, c=ca, s=2; i<i1; i++, c++) {
 		if (c->class & Cstk) {
 			r = newtmp("abi", Kl, fn);
 			emit(Oload, c->cls[0], i->to, r, R);
@@ -221,10 +221,35 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 	}
 
 	return (Params){
-		.nstk = s - 2,
+		.stk = s,
 		.ngp = (cty >> 4) & 15,
 		.nfp = (cty >> 8) & 15,
 	};
+}
+
+static void
+selvaarg(Fn *fn, Blk *b, Ins *i)
+{
+	Ref loc, newloc;
+
+	loc = newtmp("abi", Kl, fn);
+	newloc = newtmp("abi", Kl, fn);
+	emit(Ostorel, Kw, R, newloc, i->arg[0]);
+	emit(Oadd, Kl, newloc, loc, getcon(8, fn));
+	emit(Oload, i->cls, i->to, loc, R);
+	emit(Oload, Kl, loc, i->arg[0], R);
+}
+
+static void
+selvastart(Fn *fn, Params p, Ref ap)
+{
+	Ref rsave;
+	int s;
+
+	rsave = newtmp("abi", Kl, fn);
+	emit(Ostorel, Kw, R, rsave, ap);
+	s = p.stk > 2 ? p.stk : 2 + p.ngp;
+	emit(Oaddr, Kl, rsave, SLOT(-s), R);
 }
 
 void
@@ -263,6 +288,9 @@ rv64_abi(Fn *fn)
 		selret(b, fn);
 		for (i=&b->ins[b->nins]; i!=b->ins;)
 			switch ((--i)->op) {
+			default:
+				emiti(*i);
+				break;
 			case Ocall:
 			case Ovacall:
 				for (i0=i; i0>b->ins; i0--)
@@ -271,9 +299,15 @@ rv64_abi(Fn *fn)
 				selcall(fn, i0, i, &il);
 				i = i0;
 				break;
-			default:
-				emiti(*i);
+			case Ovastart:
+				selvastart(fn, p, i->arg[0]);
 				break;
+			case Ovaarg:
+				selvaarg(fn, b, i);
+				break;
+			case Oarg:
+			case Oargc:
+				die("unreachable");
 			}
 		if (b == fn->start)
 			for (; il; il=il->link)

@@ -112,7 +112,7 @@ slot(int s, Fn *fn)
 	s = ((int32_t)s << 3) >> 3;
 	assert(s <= fn->slot);
 	if (s < 0)
-		return 4 * -s + 64 * fn->vararg;
+		return 8 * -s;
 	else
 		return -4 * (fn->slot - s);
 }
@@ -400,7 +400,7 @@ rv64_emitfn(Fn *fn, FILE *f)
 				"\tld ra, 8(fp)\n"
 				"\tld fp, 0(fp)\n"
 				"\tret\n",
-				16 + fn->vararg * 16
+				16 + fn->vararg * 64
 			);
 			break;
 		case Jjmp:

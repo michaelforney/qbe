@@ -174,14 +174,12 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 
 	if (!req(i1->arg[1], R)) {
 		abort();  /* XXX: implement */
+	} else if (KBASE(i1->cls) == 0) {
+		emit(Ocopy, i1->cls, i1->to, TMP(A0), R);
+		cty |= 1;
 	} else {
-		if (KBASE(i1->cls) == 0) {
-			emit(Ocopy, i1->cls, i1->to, TMP(A0), R);
-			cty |= 1;
-		} else {
-			emit(Ocopy, i1->cls, i1->to, TMP(FA0), R);
-			cty |= 1 << 2;
-		}
+		emit(Ocopy, i1->cls, i1->to, TMP(FA0), R);
+		cty |= 1 << 2;
 	}
 
 	emit(Ocall, 0, R, i1->arg[0], CALL(cty));

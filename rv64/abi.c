@@ -234,7 +234,7 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 	cty = argsclass(i0, i1, ca);
 	fn->reg = rv64_argregs(CALL(cty), 0);
 
-	for (i=i0, c=ca, s=2; i<i1; i++, c++) {
+	for (i=i0, c=ca, s=2 + 8 * fn->vararg; i<i1; i++, c++) {
 		if (c->class & Cstk) {
 			r = newtmp("abi", Kl, fn);
 			emit(Oload, c->cls[0], i->to, r, R);
@@ -273,7 +273,7 @@ selvastart(Fn *fn, Params p, Ref ap)
 
 	rsave = newtmp("abi", Kl, fn);
 	emit(Ostorel, Kw, R, rsave, ap);
-	s = p.stk > 2 ? p.stk : 2 + p.ngp;
+	s = p.stk > 2 + 8 * fn->vararg ? p.stk : 2 + p.ngp;
 	emit(Oaddr, Kl, rsave, SLOT(-s), R);
 }
 

@@ -213,8 +213,11 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 		}
 	}
 	if (vararg) {
+		vararg = 0;
 		for (i=i0, c=ca; i<i1; i++, c++) {
-			if (i->op != Oargv && KBASE(*c->cls) == 1)
+			if (i->op == Oargv)
+				vararg = 1;
+			else if (vararg && KBASE(*c->cls) == 1)
 				emit(Ocast, KWIDE(*c->cls) ? Kl : Kw, TMP(*c->reg), i->arg[0], R);
 		}
 	}

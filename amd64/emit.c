@@ -458,6 +458,13 @@ emitins(Ins i, Fn *fn, FILE *f)
 				break;
 			}
 		}
+		if (KBASE(i.cls) == 1
+		&& t0 == RCon
+		&& fn->con[i.arg[0].val].type == CBits) {
+			assert(fn->con[i.arg[0].val].bits.i == 0);
+			emitf("pxor %D=, %D=", &i, fn, f);
+			break;
+		}
 		if (isreg(i.to)
 		&& t0 == RCon
 		&& fn->con[i.arg[0].val].type == CAddr) {

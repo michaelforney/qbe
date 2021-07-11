@@ -69,7 +69,18 @@ fixarg(Ref *r, int k, Ins *i, Fn *fn)
 	r1 = r0 = *r;
 	s = rslot(r0, fn);
 	op = i ? i->op : Ocopy;
-	if (KBASE(k) == 1 && rtype(r0) == RCon) {
+	if (op != Ocopy && k == Kl && noimm(r0, fn)
+	|| op == Ocopy && KBASE(k) == 1 && rtype(r0) == RCon && fn->con[r0.val].bits.i == 0) {
+		/* load constants that do not fit in
+		 * a 32bit signed integer into a
+		 * long temporary OR
+		 * load positive zero into a floating
+		 * point register
+		 */
+		r1 = newtmp("isel", k, fn);
+		emit(Ocopy, k, r1, r0, R);
+	}
+	else if (KBASE(k) == 1 && rtype(r0) == RCon) {
 		/* load floating points from memory
 		 * slots, they can't be used as
 		 * immediates
@@ -83,14 +94,6 @@ fixarg(Ref *r, int k, Ins *i, Fn *fn)
 		sprintf(buf, "fp%d", n);
 		a.offset.label = intern(buf);
 		fn->mem[fn->nmem-1] = a;
-	}
-	else if (op != Ocopy && k == Kl && noimm(r0, fn)) {
-		/* load constants that do not fit in
-		 * a 32bit signed integer into a
-		 * long temporary
-		 */
-		r1 = newtmp("isel", Kl, fn);
-		emit(Ocopy, Kl, r1, r0, R);
 	}
 	else if (s != -1) {
 		/* load fast locals' addresses into

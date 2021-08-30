@@ -813,7 +813,7 @@ parsefn(int export)
 		rcls = 5;
 	if (next() != Tglo)
 		err("function name expected");
-	strcpy(curf->name, tokval.str);
+	strncpy(curf->name, tokval.str, NString-1);
 	curf->vararg = parserefl(0);
 	if (nextnl() != Tlbrace)
 		err("function body must start with {");
@@ -867,9 +867,9 @@ parsefields(Field *fld, Typ *ty, int t)
 		}
 		if (a > al)
 			al = a;
-		a = sz & (s-1);
+		a = (1 << a) - 1;
+		a = ((sz + a) & ~a) - sz;
 		if (a) {
-			a = s - a;
 			if (n < NField) {
 				/* padding */
 				fld[n].type = FPad;

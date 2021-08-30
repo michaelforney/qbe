@@ -149,7 +149,7 @@ seladdr(Ref *r, ANum *an, Fn *fn)
 			 * rewrite it or bail out if
 			 * impossible
 			 */
-			if (!req(a.index, R))
+			if (!req(a.index, R) || rtype(a.base) != RTmp)
 				return;
 			else {
 				a.index = a.base;
@@ -167,13 +167,25 @@ seladdr(Ref *r, ANum *an, Fn *fn)
 }
 
 static int
-selcmp(Ref arg[2], int k, Fn *fn)
+cmpswap(Ref arg[2], int op)
 {
-	int swap;
+	switch (op) {
+	case NCmpI+Cflt:
+	case NCmpI+Cfle:
+		return 1;
+	case NCmpI+Cfgt:
+	case NCmpI+Cfge:
+		return 0;
+	}
+	return rtype(arg[0]) == RCon;
+}
+
+static void
+selcmp(Ref arg[2], int k, int swap, Fn *fn)
+{
 	Ref r;
 	Ins *icmp;
 
-	swap = rtype(arg[0]) == RCon;
 	if (swap) {
 		r = arg[1];
 		arg[1] = arg[0];
@@ -182,20 +194,20 @@ selcmp(Ref arg[2], int k, Fn *fn)
 	emit(Oxcmp, k, R, arg[1], arg[0]);
 	icmp = curi;
 	if (rtype(arg[0]) == RCon) {
-		assert(k == Kl);
+		assert(k != Kw);
 		icmp->arg[1] = newtmp("isel", k, fn);
 		emit(Ocopy, k, icmp->arg[1], arg[0], R);
+		fixarg(&curi->arg[0], k, curi, fn);
 	}
 	fixarg(&icmp->arg[0], k, icmp, fn);
 	fixarg(&icmp->arg[1], k, icmp, fn);
-	return swap;
 }
 
 static void
 sel(Ins i, ANum *an, Fn *fn)
 {
 	Ref r0, r1;
-	int x, k, kc;
+	int x, k, kc, swap;
 	int64_t sz;
 	Ins *i0, *i1;
 
@@ -246,13 +258,18 @@ sel(Ins i, ANum *an, Fn *fn)
 	case Osar:
 	case Oshr:
 	case Oshl:
-		if (rtype(i.arg[1]) == RCon)
-			goto Emit;
 		r0 = i.arg[1];
+		if (rtype(r0) == RCon)
+			goto Emit;
+		if (fn->tmp[r0.val].slot != -1)
+			err("unlikely argument %%%s in %s",
+				fn->tmp[r0.val].name, optab[i.op].name);
 		i.arg[1] = TMP(RCX);
 		emit(Ocopy, Kw, R, TMP(RCX), R);
 		emiti(i);
+		i1 = curi;
 		emit(Ocopy, Kw, TMP(RCX), r0, R);
+		fixarg(&i1->arg[0], argcls(&i, 0), i1, fn);
 		break;
 	case Onop:
 		break;
@@ -329,31 +346,37 @@ Emit:
 		if (isload(i.op))
 			goto case_Oload;
 		if (iscmp(i.op, &kc, &x)) {
-			/* ZF is set when operands are unordered, so we
-			 * may have to check PF as well.
-			 */
 			switch (x) {
 			case NCmpI+Cfeq:
+				/* zf is set when operands are
+				 * unordered, so we may have to
+				 * check pf
+				 */
 				r0 = newtmp("isel", Kw, fn);
-				emit(Oand, Kw, i.to, i.to, r0);
-				emit(Oflagfo, k, r0, R, R);
+				r1 = newtmp("isel", Kw, fn);
+				emit(Oand, Kw, i.to, r0, r1);
+				emit(Oflagfo, k, r1, R, R);
+				i.to = r0;
 				break;
 			case NCmpI+Cfne:
 				r0 = newtmp("isel", Kw, fn);
-				emit(Oor, Kw, i.to, i.to, r0);
-				emit(Oflagfuo, k, r0, R, R);
+				r1 = newtmp("isel", Kw, fn);
+				emit(Oor, Kw, i.to, r0, r1);
+				emit(Oflagfuo, k, r1, R, R);
+				i.to = r0;
 				break;
 			}
+			swap = cmpswap(i.arg, x);
+			if (swap)
+				x = cmpop(x);
 			emit(Oflag+x, k, i.to, R, R);
-			i1 = curi;
-			if (selcmp(i.arg, kc, fn))
-				i1->op = Oflag + cmpop(x);
+			selcmp(i.arg, kc, swap, fn);
 			break;
 		}
 		die("unknown instruction %s", optab[i.op].name);
 	}
 
-	while (i0 > curi && --i0) {
+	while (i0>curi && --i0) {
 		assert(rslot(i0->arg[0], fn) == -1);
 		assert(rslot(i0->arg[1], fn) == -1);
 	}
@@ -377,7 +400,7 @@ static void
 seljmp(Blk *b, Fn *fn)
 {
 	Ref r;
-	int c, k;
+	int c, k, swap;
 	Ins *fi;
 	Tmp *t;
 
@@ -387,7 +410,7 @@ seljmp(Blk *b, Fn *fn)
 	r = b->jmp.arg;
 	t = &fn->tmp[r.val];
 	b->jmp.arg = R;
-	assert(!req(r, R) && rtype(r) != RCon);
+	assert(rtype(r) == RTmp);
 	if (b->s1 == b->s2) {
 		chuse(r, -1, fn);
 		b->jmp.type = Jjmp;
@@ -396,14 +419,17 @@ seljmp(Blk *b, Fn *fn)
 	}
 	fi = flagi(b->ins, &b->ins[b->nins]);
 	if (!fi || !req(fi->to, r)) {
-		selcmp((Ref[2]){r, CON_Z}, Kw, fn); /* todo, long jnz */
+		selcmp((Ref[2]){r, CON_Z}, Kw, 0, fn); /* todo, long jnz */
 		b->jmp.type = Jjf + Cine;
 	}
-	else if (iscmp(fi->op, &k, &c)) {
-		if (rtype(fi->arg[0]) == RCon)
+	else if (iscmp(fi->op, &k, &c)
+	     && c != NCmpI+Cfeq /* see sel() */
+	     && c != NCmpI+Cfne) {
+		swap = cmpswap(fi->arg, c);
+		if (swap)
 			c = cmpop(c);
 		if (t->nuse == 1) {
-			selcmp(fi->arg, k, fn);
+			selcmp(fi->arg, k, swap, fn);
 			*fi = (Ins){.op = Onop};
 		}
 		b->jmp.type = Jjf + c;
@@ -524,7 +550,9 @@ amatch(Addr *a, Ref r, int n, ANum *ai, Fn *fn)
 	Ref al, ar;
 
 	if (rtype(r) == RCon) {
-		addcon(&a->offset, &fn->con[r.val]);
+		if (!addcon(&a->offset, &fn->con[r.val]))
+			err("unlikely sum of $%s and $%s",
+				str(a->offset.label), str(fn->con[r.val].label));
 		return 1;
 	}
 	assert(rtype(r) == RTmp);

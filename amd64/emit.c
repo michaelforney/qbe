@@ -442,6 +442,16 @@ emitins(Ins i, Fn *fn, FILE *f)
 		if (req(i.to, i.arg[0]))
 			break;
 		t0 = rtype(i.arg[0]);
+		if (isreg(i.to)
+		&& t0 == RCon
+		&& fn->con[i.arg[0].val].type == CBits
+		&& fn->con[i.arg[0].val].bits.i == 0) {
+			if (KBASE(i.cls) == 0)
+				emitf("xor%k %=, %=", &i, fn, f);
+			else
+				emitf("pxor %D=, %D=", &i, fn, f);
+			break;
+		}
 		if (i.cls == Kl
 		&& t0 == RCon
 		&& fn->con[i.arg[0].val].type == CBits) {
@@ -457,13 +467,6 @@ emitins(Ins i, Fn *fn, FILE *f)
 				emitf("movl %0>>32, 4+%=", &i, fn, f);
 				break;
 			}
-		}
-		if (KBASE(i.cls) == 1
-		&& t0 == RCon
-		&& fn->con[i.arg[0].val].type == CBits) {
-			assert(fn->con[i.arg[0].val].bits.i == 0);
-			emitf("pxor %D=, %D=", &i, fn, f);
-			break;
 		}
 		if (isreg(i.to)
 		&& t0 == RCon

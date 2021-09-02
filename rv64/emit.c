@@ -297,7 +297,7 @@ emitins(Ins *i, Fn *fn, FILE *f)
 			fprintf(f, "\tcall %s\n", str(con->label));
 			break;
 		case RTmp:
-			emitf("\tjalr %0", i, fn, f);
+			emitf("jalr %0", i, fn, f);
 			break;
 		default:
 		invalid:

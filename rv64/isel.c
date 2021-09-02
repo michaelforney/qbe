@@ -68,24 +68,24 @@ selcmp(Ins i, int k, int op, Fn *fn)
 	case Ciugt: sign = 0, swap = 1, neg = 0; break;
 	case Ciule: sign = 0, swap = 1, neg = 1; break;
 	case Ciult: sign = 0, swap = 0, neg = 0; break;
-	case NCmpI + Cfeq:
-	case NCmpI + Cfge:
-	case NCmpI + Cfgt:
-	case NCmpI + Cfle:
-	case NCmpI + Cflt:
-		sign = 0, swap = 0, neg = 0;
+	case NCmpI+Cfeq:
+	case NCmpI+Cfge:
+	case NCmpI+Cfgt:
+	case NCmpI+Cfle:
+	case NCmpI+Cflt:
+		swap = 0, neg = 0;
 		break;
-	case NCmpI + Cfo:
-	case NCmpI + Cfuo:
+	case NCmpI+Cfo:
+	case NCmpI+Cfuo:
 		swap = 0, neg = op == NCmpI+Cfuo;
-		i.op = Oand;
 		arg[0] = i.arg[0];
 		arg[1] = i.arg[1];
+		i.op = Oand;
 		i.arg[0] = newtmp("isel", i.cls, fn);
 		i.arg[1] = newtmp("isel", i.cls, fn);
 		break;
-	case NCmpI + Cfne:
-		sign = 0, swap = 0, neg = 1;
+	case NCmpI+Cfne:
+		swap = 0, neg = 1;
 		i.op = KWIDE(k) ? Oceqd : Oceqs;
 		break;
 	default: abort();  /* XXX: implement */

@@ -5,15 +5,21 @@ typedef struct Insl Insl;
 typedef struct Params Params;
 
 enum {
-	Cstk = 1, /* pass on the stack */
-	Cptr = 2, /* replaced by a pointer */
+	Cptr  = 1, /* replaced by a pointer */
+	Cstk1 = 2, /* pass first XLEN on the stack */
+	Cstk2 = 4, /* pass second XLEN on the stack */
+	Cstk = Cstk1 | Cstk2,
 };
 
 struct Class {
 	char class;
 	uint size;
-	int reg[4];
-	int cls[4];
+	Typ *t;
+	uchar nreg;
+	uchar ngp;
+	uchar nfp;
+	int reg[2];
+	int cls[2];
 };
 
 struct Insl {
@@ -85,6 +91,78 @@ rv64_argregs(Ref r, int p[2])
 }
 
 static void
+typclass(Class *c, Typ *t, int *gp, int *fp)
+{
+	uint64_t sz;
+	uint n;
+
+	sz = (t->size + 7) & ~7;
+	c->t = t;
+	c->class = 0;
+	c->ngp = 0;
+	c->nfp = 0;
+
+	if (t->align > 4)
+		err("alignments larger than 16 are not supported");
+
+	if (t->dark || sz > 16 || sz == 0) {
+		/* large structs are replaced by a
+		 * pointer to some caller-allocated
+		 * memory */
+		c->class |= Cptr;
+		c->size = 8;
+		return;
+	}
+
+	/* TODO: float */
+
+	for (n=0; n<sz/8; n++, c->ngp++) {
+		c->reg[n] = *gp++;
+		c->cls[n] = Kl;
+	}
+
+	c->nreg = n;
+}
+
+static void
+sttmps(Ref tmp[], int cls[], uint nreg, Ref mem, Fn *fn)
+{
+	static int st[] = {
+		[Kw] = Ostorew, [Kl] = Ostorel,
+		[Ks] = Ostores, [Kd] = Ostored
+	};
+	uint n;
+	uint64_t off;
+	Ref r;
+
+	assert(nreg <= 4);
+	off = 0;
+	for (n=0; n<nreg; n++) {
+		tmp[n] = newtmp("abi", cls[n], fn);
+		r = newtmp("abi", Kl, fn);
+		emit(st[cls[n]], 0, R, tmp[n], r);
+		emit(Oadd, Kl, r, mem, getcon(off, fn));
+		off += KWIDE(cls[n]) ? 8 : 4;
+	}
+}
+
+static void
+ldregs(int reg[], int cls[], int n, Ref mem, Fn *fn)
+{
+	int i;
+	uint64_t off;
+	Ref r;
+
+	off = 0;
+	for (i=0; i<n; i++) {
+		r = newtmp("abi", Kl, fn);
+		emit(Oload, cls[i], TMP(reg[i]), r, R);
+		emit(Oadd, Kl, r, mem, getcon(off, fn));
+		off += KWIDE(cls[i]) ? 8 : 4;
+	}
+}
+
+static void
 selret(Blk *b, Fn *fn)
 {
 	int j, k, cty;
@@ -115,7 +193,7 @@ selret(Blk *b, Fn *fn)
 }
 
 static int
-argsclass(Ins *i0, Ins *i1, Class *carg)
+argsclass(Ins *i0, Ins *i1, Class *carg, Ref *env)
 {
 	int k, ngp, nfp, *gp, *fp, vararg;
 	Class *c;
@@ -141,7 +219,7 @@ argsclass(Ins *i0, Ins *i1, Class *carg)
 				nfp--;
 				c->reg[0] = *fp++;
 			} else {
-				c->class |= Cstk;
+				c->class |= Cstk1;
 			}
 			break;
 		case Oargv:
@@ -150,37 +228,88 @@ argsclass(Ins *i0, Ins *i1, Class *carg)
 			break;
 		case Oparc:
 		case Oargc:
-			abort();
+			typclass(c, &typ[i->arg[0].val], gp, fp);
+			if (c->class & Cptr) {
+				c->ngp = 1;
+				c->reg[0] = *gp;
+				c->cls[0] = Kl;
+			}
+			if (c->ngp <= ngp && c->nfp <= nfp) {
+				ngp -= c->ngp;
+				nfp -= c->nfp;
+				gp += c->ngp;
+				fp += c->nfp;
+				break;
+			}
+			c->ngp += c->nfp;
+			c->nfp = 0;
+			if (c->ngp <= ngp) {
+				ngp -= c->ngp;
+				gp += c->ngp;
+				break;
+			}
+			c->class |= Cstk1;
+			if (c->ngp - 1 > ngp)
+				c->class |= Cstk2;
+			break;
+		case Opare:
+			*env = i->to;
+			break;
+		case Oarge:
+			*env = i->arg[0];
+			break;
 		}
 	}
 	return (gp-gpreg) << 4 | (fp-fpreg) << 8;
 }
 
 static void
+stkblob(Ref r, Class *c, Fn *fn, Insl **ilp)
+{
+	Insl *il;
+	int al;
+
+	il = alloc(sizeof *il);
+	al = c->t->align - 2; /* NAlign == 3 */
+	if (al < 0)
+		al = 0;
+	il->i = (Ins){Oalloc+al, Kl, r, {getcon(c->t->size, fn)}};
+	il->link = *ilp;
+	*ilp = il;
+}
+
+static void
 selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 {
 	Ins *i;
-	Class *ca, *c;
-	Ref r;
-	int k, cty, vararg;
-	uint64_t stk;
+	Class *ca, *c, cr;
+	int k, cty, envc, vararg;
+	uint64_t stk, off;
+	Ref r, env;
 
+	env = R;
 	ca = alloc((i1-i0) * sizeof ca[0]);
-	cty = argsclass(i0, i1, ca);
+	cty = argsclass(i0, i1, ca, &env);
 
 	stk = 0;
 	for (i=i0, c=ca; i<i1; i++, c++) {
+		if (i->op == Oargv)
+			continue;
 		if (c->class & Cptr) {
-			abort();  /* XXX: implement */
+			i->arg[0] = newtmp("abi", Kl, fn);
+			stkblob(i->arg[0], c, fn, ilp);
+			i->op = Oarg;
 		}
-		if (c->class & Cstk) {
-			abort();  /* XXX: implement */
-		}
+		if (c->class & Cstk1)
+			stk += 8;
+		if (c->class & Cstk2)
+			stk += 8;
 	}
-	//if (stk)
-	//	emit(Oadd, Kl, TMP(SP), TMP(SP)
+	if (stk)
+		emit(Oadd, Kl, TMP(SP), TMP(SP), getcon(stk, fn));
 
 	if (!req(i1->arg[1], R)) {
+		typclass(&cr, &typ[i1->arg[1].val], gpreg, fpreg);
 		abort();  /* XXX: implement */
 	} else if (KBASE(i1->cls) == 0) {
 		emit(Ocopy, i1->cls, i1->to, TMP(A0), R);
@@ -190,6 +319,9 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 		cty |= 1 << 2;
 	}
 
+	envc = !req(R, env);
+	if (envc)
+		die("todo (rv64 abi): env calls");
 	emit(Ocall, 0, R, i1->arg[0], CALL(cty));
 
 	/* move arguments into registers */
@@ -199,11 +331,11 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 			vararg = 1;
 			continue;
 		}
-		if (c->class & Cstk)
+		if (c->class & Cstk1)
 			continue;
-		if (i->op == Oargc)
-			abort();  /* XXX: implement */
-		else if (vararg && KBASE(*c->cls) == 1) {
+		if (i->op == Oargc) {
+			ldregs(c->reg, c->cls, c->nreg, i->arg[1], fn);
+		} else if (vararg && KBASE(*c->cls) == 1) {
 			k = KWIDE(*c->cls) ? Kl : Kw;
 			r = newtmp("abi", k, fn);
 			emit(Ocopy, k, TMP(c->reg[0]), r, R);
@@ -212,6 +344,20 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 			emit(Ocopy, *c->cls, TMP(*c->reg), i->arg[0], R);
 		}
 	}
+
+	off = 0;
+	for (i=i0, c=ca; i<i1; i++, c++) {
+		if (i->op == Oargv || (c->class & Cstk) == 0)
+			continue;
+		if (i->op != Oargc) {
+			r = newtmp("abi", Kl, fn);
+			emit(Ostorel, 0, R, i->arg[0], r);
+			emit(Oadd, Kl, r, TMP(SP), getcon(off, fn));
+		} else
+			blit(TMP(SP), off, i->arg[1], c->size, fn);
+		off += c->size;
+	}
+
 	if (vararg) {
 		vararg = 0;
 		for (i=i0, c=ca; i<i1; i++, c++) {
@@ -221,24 +367,65 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 				emit(Ocast, KWIDE(*c->cls) ? Kl : Kw, TMP(*c->reg), i->arg[0], R);
 		}
 	}
+
+	if (stk)
+		emit(Osub, Kl, TMP(SP), TMP(SP), getcon(stk, fn));
+
+	for (i=i0, c=ca; i<i1; i++, c++)
+		if (i->op != Oargv && c->class & Cptr)
+			blit(i->arg[0], 0, i->arg[1], c->t->size, fn);
 }
 
 static Params
 selpar(Fn *fn, Ins *i0, Ins *i1)
 {
-	Class *ca, *c;
+	Class *ca, *c, cr;
+	Insl *il;
 	Ins *i;
-	int s, cty;
-	Ref r;
+	int n, s, cty;
+	Ref r, env, tmp[16], *t;
 
+	env = R;
 	ca = alloc((i1-i0) * sizeof ca[0]);
 	curi = &insb[NIns];
 
-	cty = argsclass(i0, i1, ca);
+	cty = argsclass(i0, i1, ca, &env);
 	fn->reg = rv64_argregs(CALL(cty), 0);
 
+	il = 0;
+	t = tmp;
+	for (i=i0, c=ca; i<i1; i++, c++) {
+		if (i->op != Oparc || (c->class & (Cptr|Cstk)))
+			continue;
+		sttmps(t, c->cls, c->nreg, i->to, fn);
+		stkblob(i->to, c, fn, &il);
+		t += c->nreg;
+	}
+	for (; il; il=il->link)
+		emiti(il->i);
+
+	if (fn->retty >= 0) {
+		typclass(&cr, &typ[fn->retty], gpreg, fpreg);
+		if (cr.class & Cptr) {
+			fn->retr = newtmp("abi", Kl, fn);
+			emit(Ocopy, Kl, fn->retr, TMP(A0), R);
+		}
+	}
+
+	t = tmp;
 	for (i=i0, c=ca, s=2 + 8 * fn->vararg; i<i1; i++, c++) {
-		if (c->class & Cstk) {
+		if (i->op == Oparc
+		&& (c->class & Cptr) == 0) {
+			if (c->class & Cstk) {
+				fn->tmp[i->to.val].slot = -s;
+				s += c->size / 8;
+			} else {
+				for (n=0; n<c->nreg; n++) {
+					r = TMP(c->reg[n]);
+					emit(Ocopy, c->cls[n], *t++, r, R);
+				}
+			}
+		} else if (c->class & Cstk1) {
 			r = newtmp("abi", Kl, fn);
 			emit(Oload, c->cls[0], i->to, r, R);
 			emit(Oaddr, Kl, r, SLOT(-s), R);
@@ -247,6 +434,9 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 			emit(Ocopy, c->cls[0], i->to, TMP(c->reg[0]), R);
 		}
 	}
+
+	if (!req(R, env))
+		die("todo (arm abi): env calls");
 
 	return (Params){
 		.stk = s,

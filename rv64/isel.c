@@ -42,7 +42,7 @@ fixarg(Ref *pr, int k, Fn *fn)
 static void
 selcmp(Ins i, int k, int op, Fn *fn)
 {
-	Ref r;
+	Ref r, arg[2];
 	int sign, swap, neg;
 
 	switch (op) {
@@ -73,9 +73,16 @@ selcmp(Ins i, int k, int op, Fn *fn)
 	case NCmpI + Cfgt:
 	case NCmpI + Cfle:
 	case NCmpI + Cflt:
+		sign = 0, swap = 0, neg = 0;
+		break;
 	case NCmpI + Cfo:
 	case NCmpI + Cfuo:
-		sign = 0, swap = 0, neg = 0;
+		swap = 0, neg = op == NCmpI+Cfuo;
+		i.op = Oand;
+		arg[0] = i.arg[0];
+		arg[1] = i.arg[1];
+		i.arg[0] = newtmp("isel", i.cls, fn);
+		i.arg[1] = newtmp("isel", i.cls, fn);
 		break;
 	case NCmpI + Cfne:
 		sign = 0, swap = 0, neg = 1;
@@ -98,6 +105,15 @@ selcmp(Ins i, int k, int op, Fn *fn)
 	emiti(i);
 	fixarg(&curi->arg[0], k, fn);
 	fixarg(&curi->arg[1], k, fn);
+	if (op == NCmpI+Cfo || op == NCmpI+Cfuo) {
+		op = KWIDE(k) ? Oceqd : Oceqs;
+		emit(op, i.cls, i.arg[0], arg[0], arg[0]);
+		fixarg(&curi->arg[0], k, fn);
+		fixarg(&curi->arg[1], k, fn);
+		emit(op, i.cls, i.arg[1], arg[1], arg[1]);
+		fixarg(&curi->arg[0], k, fn);
+		fixarg(&curi->arg[1], k, fn);
+	}
 }
 
 static void

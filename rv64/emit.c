@@ -41,13 +41,11 @@ static struct {
 	{ Ocgts,   Ki, "fgt.s %=, %0, %1" },
 	{ Ocles,   Ki, "fle.s %=, %0, %1" },
 	{ Oclts,   Ki, "flt.s %=, %0, %1" },
-	/* TODO: cos, cuos */
 	{ Oceqd,   Ki, "feq.d %=, %0, %1" },
 	{ Ocged,   Ki, "fge.d %=, %0, %1" },
 	{ Ocgtd,   Ki, "fgt.d %=, %0, %1" },
 	{ Ocled,   Ki, "fle.d %=, %0, %1" },
 	{ Ocltd,   Ki, "flt.d %=, %0, %1" },
-	/* TODO: cod, cuod */
 	{ Ostoreb, Kw, "sb %0, 0(%1)" },
 	{ Ostoreh, Kw, "sh %0, 0(%1)" },
 	{ Ostorew, Kw, "sw %0, 0(%1)" },

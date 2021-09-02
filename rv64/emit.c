@@ -35,7 +35,7 @@ static struct {
 	{ Oshr,    Ki, "srl %=, %0, %1" },
 	{ Oshl,    Ki, "sll %=, %0, %1" },
 	{ Ocsltl,  Ki, "slt %=, %0, %1" },  /* TODO: slti */
-	{ Ocultl,  Ki, "slt %=, %0, %1" },  /* TODO: sltui */
+	{ Ocultl,  Ki, "sltu %=, %0, %1" },  /* TODO: sltui */
 	{ Oceqs,   Ki, "feq.s %=, %0, %1" },
 	{ Ocges,   Ki, "fge.s %=, %0, %1" },
 	{ Ocgts,   Ki, "fgt.s %=, %0, %1" },

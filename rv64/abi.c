@@ -38,13 +38,12 @@ static int fpreg[] = {FA0, FA1, FA2, FA3, FA4, FA5, FA6, FA7};
 
 /* layout of call's second argument (RCall)
  *
- *  29   12    8    4  2  0
- *  |0.00|x|xxxx|xxxx|xx|xx|                  range
- *        |    |    |  |  ` gp regs returned (0..2)
- *        |    |    |  ` fp regs returned    (0..2)
- *        |    |    ` gp regs passed         (0..8)
- *        |     ` fp regs passed             (0..8)
- *        ` is x8 used                       (0..1)
+ *  29       8    4  2  0
+ *  |0.00|xxxx|xxxx|xx|xx|                  range
+ *           |    |  |  ` gp regs returned (0..2)
+ *           |    |  ` fp regs returned    (0..2)
+ *           |    ` gp regs passed         (0..8)
+ *            ` fp regs passed             (0..8)
  */
 
 bits
@@ -114,6 +113,8 @@ typclass(Class *c, Typ *t, int *gp, int *fp)
 		return;
 	}
 
+	c->size = sz;
+
 	/* TODO: float */
 
 	for (n=0; n<sz/8; n++, c->ngp++) {
@@ -167,6 +168,7 @@ selret(Blk *b, Fn *fn)
 {
 	int j, k, cty;
 	Ref r;
+	Class cr;
 
 	j = b->jmp.type;
 
@@ -177,7 +179,14 @@ selret(Blk *b, Fn *fn)
 	b->jmp.type = Jret0;
 
 	if (j == Jretc) {
-		die("unimplemented");
+		typclass(&cr, &typ[fn->retty], gpreg, fpreg);
+		cty = (cr.nfp << 2) | cr.ngp;
+		if (cr.class & Cptr) {
+			assert(rtype(fn->retr) == RTmp);
+			blit(fn->retr, 0, r, cr.t->size, fn);
+		} else {
+			ldregs(cr.reg, cr.cls, cr.nreg, r, fn);
+		}
 	} else {
 		k = j - Jretw;
 		if (KBASE(k) == 0) {
@@ -268,12 +277,14 @@ stkblob(Ref r, Class *c, Fn *fn, Insl **ilp)
 {
 	Insl *il;
 	int al;
+	uint64_t sz;
 
 	il = alloc(sizeof *il);
 	al = c->t->align - 2; /* NAlign == 3 */
 	if (al < 0)
 		al = 0;
-	il->i = (Ins){Oalloc+al, Kl, r, {getcon(c->t->size, fn)}};
+	sz = c->class & Cptr ? c->t->size : c->size;
+	il->i = (Ins){Oalloc+al, Kl, r, {getcon(sz, fn)}};
 	il->link = *ilp;
 	*ilp = il;
 }
@@ -284,8 +295,9 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 	Ins *i;
 	Class *ca, *c, cr;
 	int k, cty, envc, vararg;
+	uint n;
 	uint64_t stk, off;
-	Ref r, env;
+	Ref r, env, tmp[2];
 
 	env = R;
 	ca = alloc((i1-i0) * sizeof ca[0]);
@@ -310,7 +322,18 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 
 	if (!req(i1->arg[1], R)) {
 		typclass(&cr, &typ[i1->arg[1].val], gpreg, fpreg);
-		abort();  /* XXX: implement */
+		stkblob(i1->to, &cr, fn, ilp);
+		cty |= (cr.nfp << 2) | cr.ngp;
+		if (cr.class & Cptr) {
+			cty |= 1;
+			emit(Ocopy, Kw, R, TMP(A0), R);
+		} else {
+			sttmps(tmp, cr.cls, cr.nreg, i1->to, fn);
+			for (n=0; n<cr.nreg; n++) {
+				r = TMP(cr.reg[n]);
+				emit(Ocopy, cr.cls[n], tmp[n], r, R);
+			}
+		}
 	} else if (KBASE(i1->cls) == 0) {
 		emit(Ocopy, i1->cls, i1->to, TMP(A0), R);
 		cty |= 1;

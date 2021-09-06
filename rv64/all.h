@@ -22,7 +22,7 @@ enum Rv64Reg {
 	NGPR = T6 - T0 + 1,
 	NGPS = A7 - T0 + 1,
 	NFPS = FA7 - FT0 + 1,
-	NCLR = 23,
+	NCLR = (S11 - S1 + 1) + (FS11 - FS0 + 1),
 };
 MAKESURE(reg_not_tmp, FS11 < (int)Tmp0);
 

@@ -403,6 +403,7 @@ rv64_emitfn(Fn *fn, FILE *f)
 			);
 			break;
 		case Jjmp:
+		Jmp:
 			if (b->s1 != b->link)
 				fprintf(f, "\tj .L%d\n", id0+b->s1->id);
 			else
@@ -418,6 +419,7 @@ rv64_emitfn(Fn *fn, FILE *f)
 			}
 			assert(isreg(b->jmp.arg));
 			fprintf(f, "\tb%sz %s, .L%d\n", neg ? "ne" : "eq", rname[b->jmp.arg.val], id0+b->s2->id);
+			goto Jmp;
 		}
 	}
 	id0 += fn->nblk;

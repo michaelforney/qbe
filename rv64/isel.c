@@ -106,18 +106,18 @@ selcmp(Ins i, int k, int op, Fn *fn)
 	}
 	emiti(i);
 	iarg = curi->arg;
-	fixarg(&arg[0], k, fn);
-	fixarg(&arg[1], k, fn);
+	fixarg(&iarg[0], k, fn);
+	fixarg(&iarg[1], k, fn);
 	if (op == NCmpI+Cfo || op == NCmpI+Cfuo) {
 		op = KWIDE(k) ? Oceqd : Oceqs;
 		emit(op, i.cls, i.arg[0], arg[0], arg[0]);
 		iarg = curi->arg;
-		fixarg(&arg[0], k, fn);
-		fixarg(&arg[1], k, fn);
+		fixarg(&iarg[0], k, fn);
+		fixarg(&iarg[1], k, fn);
 		emit(op, i.cls, i.arg[1], arg[1], arg[1]);
 		iarg = curi->arg;
-		fixarg(&arg[0], k, fn);
-		fixarg(&arg[1], k, fn);
+		fixarg(&iarg[0], k, fn);
+		fixarg(&iarg[1], k, fn);
 	}
 }
 

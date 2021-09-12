@@ -10,33 +10,24 @@ static struct {
 	short cls;
 	char *asm;
 } omap[] = {
-	{ Oadd,    Kw, "addw %=, %0, %1" },
-	{ Oadd,    Kl, "add %=, %0, %1" },
+	{ Oadd,    Ki, "add%k %=, %0, %1" },
 	{ Oadd,    Ka, "fadd.%k %=, %0, %1" },
-	{ Osub,    Kw, "subw %=, %0, %1" },
-	{ Osub,    Kl, "sub %=, %0, %1" },
+	{ Osub,    Ki, "sub%k %=, %0, %1" },
 	{ Osub,    Ka, "fsub.%k %=, %0, %1" },
-	{ Odiv,    Kw, "divw %=, %0, %1" },
-	{ Odiv,    Kl, "div %=, %0, %1"	},
+	{ Odiv,    Ki, "div%k %=, %0, %1" },
 	{ Odiv,    Ka, "fdiv.%k %=, %0, %1" },
-	{ Orem,    Kw, "remw %=, %0, %1" },
+	{ Orem,    Ki, "rem%k %=, %0, %1" },
 	{ Orem,    Kl, "rem %=, %0, %1" },
-	{ Oudiv,   Kw, "divuw %=, %0, %1" },
-	{ Oudiv,   Kl, "divu %=, %0, %1" },
-	{ Ourem,   Kw, "remuw %=, %0, %1" },
-	{ Ourem,   Kl, "remu %=, %0, %1" },
-	{ Omul,    Kw, "mulw %=, %0, %1" },
-	{ Omul,    Kl, "mul %=, %0, %1" },
+	{ Oudiv,   Ki, "divu%k %=, %0, %1" },
+	{ Ourem,   Ki, "remu%k %=, %0, %1" },
+	{ Omul,    Ki, "mul%k %=, %0, %1" },
 	{ Omul,    Ka, "fmul.%k %=, %0, %1" },
 	{ Oand,    Ki, "and %=, %0, %1" },
 	{ Oor,     Ki, "or %=, %0, %1" },
 	{ Oxor,    Ki, "xor %=, %0, %1" },
-	{ Osar,    Kw, "sraw %=, %0, %1" },
-	{ Osar,    Ki, "sra %=, %0, %1" },
-	{ Oshr,    Kw, "srlw %=, %0, %1" },
-	{ Oshr,    Ki, "srl %=, %0, %1" },
-	{ Oshl,    Kw, "sllw %=, %0, %1" },
-	{ Oshl,    Ki, "sll %=, %0, %1" },
+	{ Osar,    Ki, "sra%k %=, %0, %1" },
+	{ Oshr,    Ki, "srl%k %=, %0, %1" },
+	{ Oshl,    Ki, "sll%k %=, %0, %1" },
 	{ Ocsltl,  Ki, "slt %=, %0, %1" },  /* TODO: slti */
 	{ Ocultl,  Ki, "sltu %=, %0, %1" },  /* TODO: sltui */
 	{ Oceqs,   Ki, "feq.s %=, %0, %1" },
@@ -75,8 +66,10 @@ static struct {
 	{ Oextuw,  Ki, "zext.w %=, %0" },
 	{ Otruncd, Ks, "fcvt.s.d %=, %0" },
 	{ Oexts,   Kd, "fcvt.d.s %=, %0" },
-	{ Ostosi,  Ki, "fcvt.%k.s %=, %0" },
-	{ Odtosi,  Ki, "fcvt.%k.d %=, %0" },
+	{ Ostosi,  Kw, "fcvt.w.s %=, %0" },
+	{ Ostosi,  Kl, "fcvt.l.s %=, %0" },
+	{ Odtosi,  Kw, "fcvt.w.d %=, %0" },
+	{ Odtosi,  Kl, "fcvt.l.d %=, %0" },
 	{ Oswtof,  Ka, "fcvt.%k.w %=, %0" },
 	{ Osltof,  Ka, "fcvt.%k.l %=, %0" },
 	{ Ocast,   Kw, "fmv.x.w %=, %0" },
@@ -147,7 +140,8 @@ emitf(char *s, Ins *i, Fn *fn, FILE *f)
 				abort();
 			break;
 		case 'k':
-			fputc(clschr[i->cls], f);
+			if (i->cls != Kl)
+				fputc(clschr[i->cls], f);
 			break;
 		case '=':
 		case '0':

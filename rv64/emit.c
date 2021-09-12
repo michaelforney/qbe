@@ -31,8 +31,11 @@ static struct {
 	{ Oand,    Ki, "and %=, %0, %1" },
 	{ Oor,     Ki, "or %=, %0, %1" },
 	{ Oxor,    Ki, "xor %=, %0, %1" },
+	{ Osar,    Kw, "sraw %=, %0, %1" },
 	{ Osar,    Ki, "sra %=, %0, %1" },
+	{ Oshr,    Kw, "srlw %=, %0, %1" },
 	{ Oshr,    Ki, "srl %=, %0, %1" },
+	{ Oshl,    Kw, "sllw %=, %0, %1" },
 	{ Oshl,    Ki, "sll %=, %0, %1" },
 	{ Ocsltl,  Ki, "slt %=, %0, %1" },  /* TODO: slti */
 	{ Ocultl,  Ki, "sltu %=, %0, %1" },  /* TODO: sltui */

@@ -202,7 +202,7 @@ selret(Blk *b, Fn *fn)
 }
 
 static int
-argsclass(Ins *i0, Ins *i1, Class *carg, Ref *env)
+argsclass(Ins *i0, Ins *i1, Class *carg, Ref *env, int retptr)
 {
 	int k, ngp, nfp, *gp, *fp, vararg;
 	Class *c;
@@ -213,6 +213,10 @@ argsclass(Ins *i0, Ins *i1, Class *carg, Ref *env)
 	ngp = 8;
 	nfp = 8;
 	vararg = 0;
+	if (retptr) {
+		gp++;
+		ngp--;
+	}
 	for (i=i0, c=carg; i<i1; i++, c++) {
 		switch (i->op) {
 		case Opar:
@@ -301,8 +305,12 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 
 	env = R;
 	ca = alloc((i1-i0) * sizeof ca[0]);
-	cty = argsclass(i0, i1, ca, &env);
+	cr.class = 0;
 
+	if (!req(i1->arg[1], R))
+		typclass(&cr, &typ[i1->arg[1].val], gpreg, fpreg);
+
+	cty = argsclass(i0, i1, ca, &env, cr.class & Cptr);
 	stk = 0;
 	for (i=i0, c=ca; i<i1; i++, c++) {
 		if (i->op == Oargv)
@@ -321,7 +329,6 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 		emit(Oadd, Kl, TMP(SP), TMP(SP), getcon(stk, fn));
 
 	if (!req(i1->arg[1], R)) {
-		typclass(&cr, &typ[i1->arg[1].val], gpreg, fpreg);
 		stkblob(i1->to, &cr, fn, ilp);
 		cty |= (cr.nfp << 2) | cr.ngp;
 		if (cr.class & Cptr) {
@@ -346,6 +353,10 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 	if (envc)
 		die("todo (rv64 abi): env calls");
 	emit(Ocall, 0, R, i1->arg[0], CALL(cty));
+
+	if (cr.class & Cptr)
+		/* struct return argument */
+		emit(Ocopy, Kl, TMP(A0), i1->to, R);
 
 	/* move arguments into registers */
 	vararg = 0;
@@ -410,9 +421,18 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 
 	env = R;
 	ca = alloc((i1-i0) * sizeof ca[0]);
+	cr.class = 0;
 	curi = &insb[NIns];
 
-	cty = argsclass(i0, i1, ca, &env);
+	if (fn->retty >= 0) {
+		typclass(&cr, &typ[fn->retty], gpreg, fpreg);
+		if (cr.class & Cptr) {
+			fn->retr = newtmp("abi", Kl, fn);
+			emit(Ocopy, Kl, fn->retr, TMP(A0), R);
+		}
+	}
+
+	cty = argsclass(i0, i1, ca, &env, cr.class & Cptr);
 	fn->reg = rv64_argregs(CALL(cty), 0);
 
 	il = 0;
@@ -426,14 +446,6 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 	}
 	for (; il; il=il->link)
 		emiti(il->i);
-
-	if (fn->retty >= 0) {
-		typclass(&cr, &typ[fn->retty], gpreg, fpreg);
-		if (cr.class & Cptr) {
-			fn->retr = newtmp("abi", Kl, fn);
-			emit(Ocopy, Kl, fn->retr, TMP(A0), R);
-		}
-	}
 
 	t = tmp;
 	for (i=i0, c=ca, s=2 + 8 * fn->vararg; i<i1; i++, c++) {

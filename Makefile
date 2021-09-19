@@ -50,6 +50,9 @@ config.h:
 		*aarch64*)                             \
 			echo "#define Deftgt T_arm64"; \
 			;;                             \
+		*riscv64*)                             \
+			echo "#define Deftgt T_rv64";  \
+			;;                             \
 		*)                                     \
 			echo "#define Deftgt T_amd64_sysv";\
 			;;                             \

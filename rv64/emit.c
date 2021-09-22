@@ -135,7 +135,7 @@ emitf(char *s, Ins *i, Fn *fn, FILE *f)
 			die("invalid escape");
 		case '?':
 			if (KBASE(k) == 0)
-				fputs("s11", f);
+				fputs("t6", f);
 			else
 				abort();
 			break;

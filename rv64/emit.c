@@ -297,11 +297,8 @@ emitins(Ins *i, Fn *fn, FILE *f)
 			loadcon(&fn->con[i->arg[0].val], i->to.val, i->cls, f);
 			break;
 		case RSlot:
-			die("unimplemented");
-			/*
 			i->op = Oload;
 			goto Table;
-			*/
 		default:
 			assert(isreg(i->arg[0]));
 			goto Table;

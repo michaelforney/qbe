@@ -40,24 +40,24 @@ static struct {
 	{ Ocgtd,   Ki, "fgt.d %=, %0, %1" },
 	{ Ocled,   Ki, "fle.d %=, %0, %1" },
 	{ Ocltd,   Ki, "flt.d %=, %0, %1" },
-	{ Ostoreb, Kw, "sb %0, 0(%1)" },
-	{ Ostoreh, Kw, "sh %0, 0(%1)" },
-	{ Ostorew, Kw, "sw %0, 0(%1)" },
-	{ Ostorel, Ki, "sd %0, 0(%1)" },
-	{ Ostores, Kw, "fsw %0, 0(%1)" },
-	{ Ostored, Kw, "fsd %0, 0(%1)" },
-	{ Oloadsb, Ki, "lb %=, 0(%0)" },
-	{ Oloadub, Ki, "lbu %=, 0(%0)" },
-	{ Oloadsh, Ki, "lh %=, 0(%0)" },
-	{ Oloaduh, Ki, "lhu %=, 0(%0)" },
-	{ Oloadsw, Ki, "lw %=, 0(%0)" },
-	{ Oloaduw, Ki, "lwu %=, 0(%0)" },
-	{ Oloadsw, Ki, "lw %=, 0(%0)" },
-	{ Oloaduw, Ki, "lwu %=, 0(%0)" },
-	{ Oload,   Kw, "lw %=, 0(%0)" },
-	{ Oload,   Kl, "ld %=, 0(%0)" },
-	{ Oload,   Ks, "flw %=, 0(%0)" },
-	{ Oload,   Kd, "fld %=, 0(%0)" },
+	{ Ostoreb, Kw, "sb %0, %M1" },
+	{ Ostoreh, Kw, "sh %0, %M1" },
+	{ Ostorew, Kw, "sw %0, %M1" },
+	{ Ostorel, Ki, "sd %0, %M1" },
+	{ Ostores, Kw, "fsw %0, %M1" },
+	{ Ostored, Kw, "fsd %0, %M1" },
+	{ Oloadsb, Ki, "lb %=, %M0" },
+	{ Oloadub, Ki, "lbu %=, %M0" },
+	{ Oloadsh, Ki, "lh %=, %M0" },
+	{ Oloaduh, Ki, "lhu %=, %M0" },
+	{ Oloadsw, Ki, "lw %=, %M0" },
+	{ Oloaduw, Ki, "lwu %=, %M0" },
+	{ Oloadsw, Ki, "lw %=, %M0" },
+	{ Oloaduw, Ki, "lwu %=, %M0" },
+	{ Oload,   Kw, "lw %=, %M0" },
+	{ Oload,   Kl, "ld %=, %M0" },
+	{ Oload,   Ks, "flw %=, %M0" },
+	{ Oload,   Kd, "fld %=, %M0" },
 	{ Oextsb,  Ki, "sext.b %=, %0" },
 	{ Oextub,  Ki, "zext.b %=, %0" },
 	{ Oextsh,  Ki, "sext.h %=, %0" },
@@ -120,6 +120,7 @@ emitf(char *s, Ins *i, Fn *fn, FILE *f)
 	int k, c;
 	Con *pc;
 	unsigned n;
+	int64_t offset;
 
 	fputc('\t', f);
 	for (;;) {
@@ -168,6 +169,23 @@ emitf(char *s, Ins *i, Fn *fn, FILE *f)
 				break;
 			}
 			break;
+		case 'M':
+			c = *s++;
+			assert(c == '0' || c == '1');
+			r = i->arg[c - '0'];
+			switch (rtype(r)) {
+			default:
+				die("invalid address argument");
+			case RTmp:
+				fprintf(f, "0(%s)", rname[r.val]);
+				break;
+			case RSlot:
+				offset = slot(r.val, fn);
+				assert(offset >= -2048 && offset <= 2047);
+				fprintf(f, "%"PRId64"(fp)", offset);
+				break;
+			}
+			break;
 		}
 	}
 }
@@ -204,6 +222,22 @@ loadcon(Con *c, int r, int k, FILE *f)
 }
 
 static void
+fixslot(Ref *pr, Fn *fn, FILE *f)
+{
+	Ref r;
+	int64_t s;
+
+	r = *pr;
+	if (rtype(r) == RSlot) {
+		s = slot(r.val, fn);
+		if (s < -2048) {
+			fprintf(f, "\tli t6, %"PRId64"\n", s);
+			*pr = TMP(T6);
+		}
+	}
+}
+
+static void
 emitins(Ins *i, Fn *fn, FILE *f)
 {
 	int o;
@@ -213,6 +247,10 @@ emitins(Ins *i, Fn *fn, FILE *f)
 
 	switch (i->op) {
 	default:
+		if (isload(i->op))
+			fixslot(&i->arg[0], fn, f);
+		else if (isstore(i->op))
+			fixslot(&i->arg[1], fn, f);
 	Table:
 		/* most instructions are just pulled out of
 		 * the table omap[], some special cases are

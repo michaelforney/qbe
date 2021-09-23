@@ -230,6 +230,7 @@ fixslot(Ref *pr, Fn *fn, FILE *f)
 		s = slot(r.val, fn);
 		if (s < -2048) {
 			fprintf(f, "\tli t6, %"PRId64"\n", s);
+			fprintf(f, "\tadd t6, fp, t6\n");
 			*pr = TMP(T6);
 		}
 	}

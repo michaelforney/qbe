@@ -52,8 +52,6 @@ static struct {
 	{ Oloaduh, Ki, "lhu %=, %M0" },
 	{ Oloadsw, Ki, "lw %=, %M0" },
 	{ Oloaduw, Ki, "lwu %=, %M0" },
-	{ Oloadsw, Ki, "lw %=, %M0" },
-	{ Oloaduw, Ki, "lwu %=, %M0" },
 	{ Oload,   Kw, "lw %=, %M0" },
 	{ Oload,   Kl, "ld %=, %M0" },
 	{ Oload,   Ks, "flw %=, %M0" },

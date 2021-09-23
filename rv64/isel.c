@@ -40,9 +40,19 @@ fixarg(Ref *pr, int k, Fn *fn)
 }
 
 static void
+negate(Ref *pr, Fn *fn)
+{
+	Ref r;
+
+	r = newtmp("isel", Kw, fn);
+	emit(Oxor, Kw, *pr, r, getcon(1, fn));
+	*pr = r;
+}
+
+static void
 selcmp(Ins i, int k, int op, Fn *fn)
 {
-	Ref r, arg[2], *iarg;
+	Ref r, r0, r1, *iarg;
 	int sign, swap, neg;
 
 	switch (op) {
@@ -77,15 +87,23 @@ selcmp(Ins i, int k, int op, Fn *fn)
 	case NCmpI+Cflt:
 		swap = 0, neg = 0;
 		break;
-	case NCmpI+Cfo:
 	case NCmpI+Cfuo:
-		swap = 0, neg = op == NCmpI+Cfuo;
-		arg[0] = i.arg[0];
-		arg[1] = i.arg[1];
-		i.op = Oand;
-		i.arg[0] = newtmp("isel", i.cls, fn);
-		i.arg[1] = newtmp("isel", i.cls, fn);
-		break;
+		negate(&i.to, fn);
+		/* fallthrough */
+	case NCmpI+Cfo:
+		r0 = newtmp("isel", i.cls, fn);
+		r1 = newtmp("isel", i.cls, fn);
+		emit(Oand, i.cls, i.to, r0, r1);
+		op = KWIDE(k) ? Oceqd : Oceqs;
+		emit(op, i.cls, r0, i.arg[0], i.arg[0]);
+		iarg = curi->arg;
+		fixarg(&iarg[0], k, fn);
+		fixarg(&iarg[1], k, fn);
+		emit(op, i.cls, r1, i.arg[1], i.arg[1]);
+		iarg = curi->arg;
+		fixarg(&iarg[0], k, fn);
+		fixarg(&iarg[1], k, fn);
+		return;
 	case NCmpI+Cfne:
 		swap = 0, neg = 1;
 		i.op = KWIDE(k) ? Oceqd : Oceqs;
@@ -99,26 +117,12 @@ selcmp(Ins i, int k, int op, Fn *fn)
 		i.arg[0] = i.arg[1];
 		i.arg[1] = r;
 	}
-	if (neg) {
-		r = newtmp("isel", i.cls, fn);
-		emit(Oxor, i.cls, i.to, r, getcon(1, fn));
-		i.to = r;
-	}
+	if (neg)
+		negate(&i.to, fn);
 	emiti(i);
 	iarg = curi->arg;
 	fixarg(&iarg[0], k, fn);
 	fixarg(&iarg[1], k, fn);
-	if (op == NCmpI+Cfo || op == NCmpI+Cfuo) {
-		op = KWIDE(k) ? Oceqd : Oceqs;
-		emit(op, i.cls, i.arg[0], arg[0], arg[0]);
-		iarg = curi->arg;
-		fixarg(&iarg[0], k, fn);
-		fixarg(&iarg[1], k, fn);
-		emit(op, i.cls, i.arg[1], arg[1], arg[1]);
-		iarg = curi->arg;
-		fixarg(&iarg[0], k, fn);
-		fixarg(&iarg[1], k, fn);
-	}
 }
 
 static void

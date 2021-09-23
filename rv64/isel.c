@@ -1,14 +1,22 @@
 #include "all.h"
 
+static int
+memarg(Ref *r, int op, Ins *i)
+{
+	return ((isload(op) || iscall(op)) && r == &i->arg[0])
+	|| (isstore(op) && r == &i->arg[1]);
+}
+
 static void
-fixarg(Ref *pr, int k, Fn *fn)
+fixarg(Ref *r, int k, Ins *i, Fn *fn)
 {
 	char buf[32];
 	Ref r0, r1, r2;
-	int s, n;
+	int s, n, op;
 	Con *c;
 
-	r0 = *pr;
+	r0 = r1 = *r;
+	op = i ? i->op : Ocopy;
 	switch (rtype(r0)) {
 	case RCon:
 		r1 = newtmp("isel", k, fn);
@@ -26,17 +34,25 @@ fixarg(Ref *pr, int k, Fn *fn)
 			emit(Oload, k, r1, r2, R);
 			emit(Ocopy, Kl, r2, CON(c-fn->con), R);
 		}
-		*pr = r1;
 		break;
 	case RTmp:
 		s = fn->tmp[r0.val].slot;
-		if (s == -1)
+		if (s != -1) {
+			/* aggregate passed by value on
+			 * stack, or fast local address,
+			 * replace with slot if we can
+			 */
+			if (memarg(r, op, i)) {
+				r1 = SLOT(s);
+				break;
+			}
+			r1 = newtmp("isel", k, fn);
+			emit(Oaddr, k, r1, SLOT(s), R);
 			break;
-		r1 = newtmp("isel", Kl, fn);
-		emit(Oaddr, Kl, r1, SLOT(s), R);
-		*pr = r1;
+		}
 		break;
 	}
+	*r = r1;
 }
 
 static void
@@ -52,7 +68,8 @@ negate(Ref *pr, Fn *fn)
 static void
 selcmp(Ins i, int k, int op, Fn *fn)
 {
-	Ref r, r0, r1, *iarg;
+	Ins *icmp;
+	Ref r, r0, r1;
 	int sign, swap, neg;
 
 	switch (op) {
@@ -60,17 +77,17 @@ selcmp(Ins i, int k, int op, Fn *fn)
 		r = newtmp("isel", k, fn);
 		emit(Oreqz, i.cls, i.to, r, R);
 		emit(Oxor, k, r, i.arg[0], i.arg[1]);
-		iarg = curi->arg;
-		fixarg(&iarg[0], k, fn);
-		fixarg(&iarg[1], k, fn);
+		icmp = curi;
+		fixarg(&icmp->arg[0], k, icmp, fn);
+		fixarg(&icmp->arg[1], k, icmp, fn);
 		return;
 	case Cine:
 		r = newtmp("isel", k, fn);
 		emit(Ornez, i.cls, i.to, r, R);
 		emit(Oxor, k, r, i.arg[0], i.arg[1]);
-		iarg = curi->arg;
-		fixarg(&iarg[0], k, fn);
-		fixarg(&iarg[1], k, fn);
+		icmp = curi;
+		fixarg(&icmp->arg[0], k, icmp, fn);
+		fixarg(&icmp->arg[1], k, icmp, fn);
 		return;
 	case Cisge: sign = 1, swap = 0, neg = 1; break;
 	case Cisgt: sign = 1, swap = 1, neg = 0; break;
@@ -96,13 +113,13 @@ selcmp(Ins i, int k, int op, Fn *fn)
 		emit(Oand, i.cls, i.to, r0, r1);
 		op = KWIDE(k) ? Oceqd : Oceqs;
 		emit(op, i.cls, r0, i.arg[0], i.arg[0]);
-		iarg = curi->arg;
-		fixarg(&iarg[0], k, fn);
-		fixarg(&iarg[1], k, fn);
+		icmp = curi;
+		fixarg(&icmp->arg[0], k, icmp, fn);
+		fixarg(&icmp->arg[1], k, icmp, fn);
 		emit(op, i.cls, r1, i.arg[1], i.arg[1]);
-		iarg = curi->arg;
-		fixarg(&iarg[0], k, fn);
-		fixarg(&iarg[1], k, fn);
+		icmp = curi;
+		fixarg(&icmp->arg[0], k, icmp, fn);
+		fixarg(&icmp->arg[1], k, icmp, fn);
 		return;
 	case NCmpI+Cfne:
 		swap = 0, neg = 1;
@@ -120,15 +137,15 @@ selcmp(Ins i, int k, int op, Fn *fn)
 	if (neg)
 		negate(&i.to, fn);
 	emiti(i);
-	iarg = curi->arg;
-	fixarg(&iarg[0], k, fn);
-	fixarg(&iarg[1], k, fn);
+	icmp = curi;
+	fixarg(&icmp->arg[0], k, icmp, fn);
+	fixarg(&icmp->arg[1], k, icmp, fn);
 }
 
 static void
 sel(Ins i, Fn *fn)
 {
-	Ref *iarg;
+	Ins *i0;
 	int ck, cc;
 
 	switch (i.op) {
@@ -148,9 +165,9 @@ sel(Ins i, Fn *fn)
 			break;
 		}
 		emiti(i);
-		iarg = curi->arg; /* fixarg() can change curi */
-		fixarg(&iarg[0], argcls(&i, 0), fn);
-		fixarg(&iarg[1], argcls(&i, 1), fn);
+		i0 = curi; /* fixarg() can change curi */
+		fixarg(&i0->arg[0], argcls(&i, 0), i0, fn);
+		fixarg(&i0->arg[1], argcls(&i, 1), i0, fn);
 	}
 }
 
@@ -198,7 +215,7 @@ rv64_isel(Fn *fn)
 			for (p=(*sb)->phi; p; p=p->link) {
 				for (n=0; p->blk[n] != b; n++)
 					assert(n+1 < p->narg);
-				fixarg(&p->arg[n], p->cls, fn);
+				fixarg(&p->arg[n], p->cls, 0, fn);
 			}
 		seljmp(b, fn);
 		for (i=&b->ins[b->nins]; i!=b->ins;)

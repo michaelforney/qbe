@@ -461,9 +461,7 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 				}
 			}
 		} else if (c->class & Cstk1) {
-			r = newtmp("abi", Kl, fn);
-			emit(Oload, c->cls[0], i->to, r, R);
-			emit(Oaddr, Kl, r, SLOT(-s), R);
+			emit(Oload, c->cls[0], i->to, SLOT(-s), R);
 			s++;
 		} else {
 			emit(Ocopy, c->cls[0], i->to, TMP(c->reg[0]), R);

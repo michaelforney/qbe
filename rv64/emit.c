@@ -111,6 +111,19 @@ slot(int s, Fn *fn)
 }
 
 static void
+emitaddr(Con *c, FILE *f)
+{
+	char off[32], *p;
+
+	if (c->bits.i)
+		sprintf(off, "+%"PRIi64, c->bits.i);
+	else
+		off[0] = 0;
+	p = c->local ? ".L" : "";
+	fprintf(f, "%s%s%s", p, str(c->label), off);
+}
+
+static void
 emitf(char *s, Ins *i, Fn *fn, FILE *f)
 {
 	static char clschr[] = {'w', 'l', 's', 'd'};
@@ -177,6 +190,20 @@ emitf(char *s, Ins *i, Fn *fn, FILE *f)
 			case RTmp:
 				fprintf(f, "0(%s)", rname[r.val]);
 				break;
+			case RCon:
+				pc = &fn->con[r.val];
+				assert(pc->type == CAddr);
+				emitaddr(pc, f);
+				if (isstore(i->op)
+				|| (isload(i->op) && KBASE(i->cls) == 1)) {
+					/* store (and float load)
+					 * pseudo-instructions need a
+					 * temporary register in which to
+					 * load the address
+					 */
+					fprintf(f, ", t6");
+				}
+				break;
 			case RSlot:
 				offset = slot(r.val, fn);
 				assert(offset >= -2048 && offset <= 2047);
@@ -191,7 +218,7 @@ emitf(char *s, Ins *i, Fn *fn, FILE *f)
 static void
 loadcon(Con *c, int r, int k, FILE *f)
 {
-	char *rn, *p, off[32];
+	char *rn;
 	int64_t n;
 	int w;
 
@@ -199,13 +226,9 @@ loadcon(Con *c, int r, int k, FILE *f)
 	rn = rname[r];
 	switch (c->type) {
 	case CAddr:
-		n = c->bits.i;
-		if (n)
-			sprintf(off, "+%"PRIi64, n);
-		else
-			off[0] = 0;
-		p = c->local ? ".L" : "";
-		fprintf(f, "\tla %s, %s%s%s\n", rn, p, str(c->label), off);
+		fprintf(f, "\tla %s, ", rn);
+		emitaddr(c, f);
+		fputc('\n', f);
 		break;
 	case CBits:
 		n = c->bits.i;

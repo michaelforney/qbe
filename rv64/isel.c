@@ -11,7 +11,7 @@ static void
 fixarg(Ref *r, int k, Ins *i, Fn *fn)
 {
 	char buf[32];
-	Ref r0, r1, r2;
+	Ref r0, r1;
 	int s, n, op;
 	Con *c;
 
@@ -19,21 +19,26 @@ fixarg(Ref *r, int k, Ins *i, Fn *fn)
 	op = i ? i->op : Ocopy;
 	switch (rtype(r0)) {
 	case RCon:
+		c = &fn->con[r0.val];
+		if (c->type == CAddr && memarg(r, op, i))
+			break;
 		r1 = newtmp("isel", k, fn);
-		if (KBASE(k) == 0) {
-			emit(Ocopy, k, r1, r0, R);
-		} else {
-			c = &fn->con[r0.val];
+		if (KBASE(k) == 1) {
+			/* load floating points from memory
+			 * slots, they can't be used as
+			 * immediates
+			 */
+			assert(c->type == CBits);
 			n = gasstash(&c->bits, KWIDE(k) ? 8 : 4);
 			vgrow(&fn->con, ++fn->ncon);
 			c = &fn->con[fn->ncon-1];
 			sprintf(buf, "fp%d", n);
 			*c = (Con){.type = CAddr, .local = 1};
 			c->label = intern(buf);
-			r2 = newtmp("isel", Kl, fn);
-			emit(Oload, k, r1, r2, R);
-			emit(Ocopy, Kl, r2, CON(c-fn->con), R);
+			emit(Oload, k, r1, CON(c-fn->con), R);
+			break;
 		}
+		emit(Ocopy, k, r1, r0, R);
 		break;
 	case RTmp:
 		s = fn->tmp[r0.val].slot;
@@ -155,9 +160,6 @@ sel(Ins i, Fn *fn)
 		i.op = Oand;
 		i.arg[1] = getcon(0xff, fn);
 		goto Emit;
-	case Ocall:
-		emiti(i);  /* XXX: should this use the default label and fixarg ignore Ocall? */
-		break;
 	default:
 	Emit:
 		if (iscmp(i.op, &ck, &cc)) {

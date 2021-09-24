@@ -382,7 +382,27 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 			continue;
 		if (i->op != Oargc) {
 			r = newtmp("abi", Kl, fn);
-			emit(Ostorel, 0, R, i->arg[0], r);
+			/* w arguments are stored sign-extended
+			 * to 64-bits
+			 *
+			 * s arguments can just be stored with
+			 * Ostores into the first 32-bits in the
+			 * stack position since the ABI says the
+			 * upper bits are undefined
+			 */
+			emit(i->cls == Kw ? Ostorel : Ostorew+i->cls, 0, R, i->arg[0], r);
+			if (i->cls == Kw) {
+				/* TODO: we only need this sign extension
+				 * for subtyped l temporaries passed as w
+				 * arguments (see rv64/isel.c:fixarg)
+				 *
+				 * however, we cannot just fix it in isel
+				 * since by that point we have forgotten
+				 * the original argument type
+				 */
+				curi->arg[0] = newtmp("abi", Kl, fn);
+				emit(Oextsw, Kl, curi->arg[0], i->arg[0], R);
+			}
 			emit(Oadd, Kl, r, TMP(SP), getcon(off, fn));
 		} else
 			blit(TMP(SP), off, i->arg[1], c->size, fn);

@@ -238,7 +238,6 @@ loadcon(Con *c, int r, int k, FILE *f)
 		n = c->bits.i;
 		if (!w)
 			n = (int32_t)n;
-		n = c->bits.i;
 		fprintf(f, "\tli %s, %"PRIu64"\n", rn, n);
 		break;
 	default:

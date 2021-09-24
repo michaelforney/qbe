@@ -183,9 +183,9 @@ sel(Ins i, Fn *fn)
 static void
 seljmp(Blk *b, Fn *fn)
 {
-	(void)b;
-	(void)fn;
 	/* TODO: replace cmp+jnz with beq/bne/blt[u]/bge[u] */
+	if (b->jmp.type == Jjnz)
+		fixarg(&b->jmp.arg, Kw, 0, fn);
 }
 
 void

@@ -28,9 +28,9 @@ struct Insl {
 };
 
 struct Params {
-	uint ngp;
-	uint nfp;
-	uint stk; /* stack offset for varargs */
+	int ngp;
+	int nfp;
+	int stk; /* stack offset for varargs */
 };
 
 static int gpreg[] = { A0,  A1,  A2,  A3,  A4,  A5,  A6,  A7};
@@ -479,7 +479,7 @@ selpar(Fn *fn, Ins *i0, Ins *i1)
 }
 
 static void
-selvaarg(Fn *fn, Blk *b, Ins *i)
+selvaarg(Fn *fn, Ins *i)
 {
 	Ref loc, newloc;
 
@@ -554,7 +554,7 @@ rv64_abi(Fn *fn)
 				selvastart(fn, p, i->arg[0]);
 				break;
 			case Ovaarg:
-				selvaarg(fn, b, i);
+				selvaarg(fn, i);
 				break;
 			case Oarg:
 			case Oargc:

@@ -141,7 +141,8 @@ selcmp(Ins i, int k, int op, Fn *fn)
 		swap = 0, neg = 1;
 		i.op = KWIDE(k) ? Oceqd : Oceqs;
 		break;
-	default: abort();  /* XXX: implement */
+	default:
+		assert(0 && "unknown comparison");
 	}
 	if (op < NCmpI)
 		i.op = sign ? Ocsltl : Ocultl;
@@ -168,7 +169,6 @@ sel(Ins i, Fn *fn)
 	case Onop:
 		break;
 	default:
-	Emit:
 		if (iscmp(i.op, &ck, &cc)) {
 			selcmp(i, ck, cc, fn);
 			break;
@@ -183,10 +183,8 @@ sel(Ins i, Fn *fn)
 static void
 seljmp(Blk *b, Fn *fn)
 {
-	Ref r;
-
-	if (b->jmp.type != Jjnz)
-		return;
+	(void)b;
+	(void)fn;
 	/* TODO: replace cmp+jnz with beq/bne/blt[u]/bge[u] */
 }
 
@@ -213,6 +211,8 @@ rv64_isel(Fn *fn)
 					err("invalid alloc size %"PRId64, sz);
 				sz = (sz + n-1) & -n;
 				sz /= 4;
+				if (sz > INT_MAX - fn->slot)
+					die("alloc too large");
 				fn->tmp[i->to.val].slot = fn->slot;
 				fn->slot += sz;
 				*i = (Ins){.op = Onop};

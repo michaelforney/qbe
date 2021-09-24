@@ -28,8 +28,8 @@ static struct {
 	{ Osar,    Ki, "sra%k %=, %0, %1" },
 	{ Oshr,    Ki, "srl%k %=, %0, %1" },
 	{ Oshl,    Ki, "sll%k %=, %0, %1" },
-	{ Ocsltl,  Ki, "slt %=, %0, %1" },  /* TODO: slti */
-	{ Ocultl,  Ki, "sltu %=, %0, %1" },  /* TODO: sltui */
+	{ Ocsltl,  Ki, "slt %=, %0, %1" },
+	{ Ocultl,  Ki, "sltu %=, %0, %1" },
 	{ Oceqs,   Ki, "feq.s %=, %0, %1" },
 	{ Ocges,   Ki, "fge.s %=, %0, %1" },
 	{ Ocgts,   Ki, "fgt.s %=, %0, %1" },
@@ -64,8 +64,8 @@ static struct {
 	{ Oextub,  Ki, "zext.b %=, %0" },
 	{ Oextsh,  Ki, "sext.h %=, %0" },
 	{ Oextuh,  Ki, "zext.h %=, %0" },
-	{ Oextsw,  Ki, "sext.w %=, %0" },
-	{ Oextuw,  Ki, "zext.w %=, %0" },
+	{ Oextsw,  Kl, "sext.w %=, %0" },
+	{ Oextuw,  Kl, "zext.w %=, %0" },
 	{ Otruncd, Ks, "fcvt.s.d %=, %0" },
 	{ Oexts,   Kd, "fcvt.d.s %=, %0" },
 	{ Ostosi,  Kw, "fcvt.w.s %=, %0" },

@@ -156,10 +156,6 @@ sel(Ins i, Fn *fn)
 	switch (i.op) {
 	case Onop:
 		break;
-	case Oextub:
-		i.op = Oand;
-		i.arg[1] = getcon(0xff, fn);
-		goto Emit;
 	default:
 	Emit:
 		if (iscmp(i.op, &ck, &cc)) {

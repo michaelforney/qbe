@@ -9,6 +9,7 @@ enum {
 	Cstk1 = 2, /* pass first XLEN on the stack */
 	Cstk2 = 4, /* pass second XLEN on the stack */
 	Cstk = Cstk1 | Cstk2,
+	Cfpint = 8, /* float passed like integer */
 };
 
 struct Class {
@@ -204,7 +205,7 @@ selret(Blk *b, Fn *fn)
 static int
 argsclass(Ins *i0, Ins *i1, Class *carg, Ref *env, int retptr)
 {
-	int k, ngp, nfp, *gp, *fp, vararg;
+	int ngp, nfp, *gp, *fp, vararg;
 	Class *c;
 	Ins *i;
 
@@ -224,13 +225,14 @@ argsclass(Ins *i0, Ins *i1, Class *carg, Ref *env, int retptr)
 			c->cls[0] = i->cls;
 			c->size = 8;
 			/* variadic float args are passed in int regs */
-			k = !vararg ? i->cls : KWIDE(i->cls) ? Kl : Kw;
-			if (KBASE(k) == 0 && ngp > 0) {
-				ngp--;
-				c->reg[0] = *gp++;
-			} else if (KBASE(k) == 1 && nfp > 0) {
+			if (!vararg && KBASE(i->cls) == 1 && nfp > 0) {
 				nfp--;
 				c->reg[0] = *fp++;
+			} else if (ngp > 0) {
+				if (KBASE(i->cls) == 1)
+					c->class |= Cfpint;
+				ngp--;
+				c->reg[0] = *gp++;
 			} else {
 				c->class |= Cstk1;
 			}
@@ -298,7 +300,7 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 {
 	Ins *i;
 	Class *ca, *c, cr;
-	int k, cty, envc, vararg;
+	int k, cty, envc;
 	uint n;
 	uint64_t stk, off;
 	Ref r, env, tmp[2];
@@ -359,17 +361,12 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 		emit(Ocopy, Kl, TMP(A0), i1->to, R);
 
 	/* move arguments into registers */
-	vararg = 0;
 	for (i=i0, c=ca; i<i1; i++, c++) {
-		if (i->op == Oargv) {
-			vararg = 1;
-			continue;
-		}
-		if (c->class & Cstk1)
+		if (i->op == Oargv || c->class & Cstk1)
 			continue;
 		if (i->op == Oargc) {
 			ldregs(c->reg, c->cls, c->nreg, i->arg[1], fn);
-		} else if (vararg && KBASE(*c->cls) == 1) {
+		} else if (c->class & Cfpint) {
 			k = KWIDE(*c->cls) ? Kl : Kw;
 			r = newtmp("abi", k, fn);
 			emit(Ocopy, k, TMP(c->reg[0]), r, R);
@@ -392,14 +389,11 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 		off += c->size;
 	}
 
-	if (vararg) {
-		vararg = 0;
-		for (i=i0, c=ca; i<i1; i++, c++) {
-			if (i->op == Oargv)
-				vararg = 1;
-			else if (vararg && KBASE(*c->cls) == 1)
-				emit(Ocast, KWIDE(*c->cls) ? Kl : Kw, TMP(*c->reg), i->arg[0], R);
-		}
+	for (i=i0, c=ca; i<i1; i++, c++) {
+		if (i->op == Oargv)
+			continue;
+		if (c->class & Cfpint)
+			emit(Ocast, KWIDE(*c->cls) ? Kl : Kw, TMP(*c->reg), i->arg[0], R);
 	}
 
 	if (stk)

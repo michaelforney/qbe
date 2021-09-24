@@ -51,7 +51,11 @@ static struct {
 	{ Oloadsh, Ki, "lh %=, %M0" },
 	{ Oloaduh, Ki, "lhu %=, %M0" },
 	{ Oloadsw, Ki, "lw %=, %M0" },
-	{ Oloaduw, Ki, "lwu %=, %M0" },
+	/* riscv64 always sign-extends 32-bit
+	 * values stored in 64-bit registers
+	 */
+	{ Oloaduw, Kw, "lw %=, %M0" },
+	{ Oloaduw, Kl, "lwu %=, %M0" },
 	{ Oload,   Kw, "lw %=, %M0" },
 	{ Oload,   Kl, "ld %=, %M0" },
 	{ Oload,   Ks, "flw %=, %M0" },

@@ -41,6 +41,8 @@ fixarg(Ref *r, int k, Ins *i, Fn *fn)
 		emit(Ocopy, k, r1, r0, R);
 		break;
 	case RTmp:
+		if (isreg(r0))
+			break;
 		s = fn->tmp[r0.val].slot;
 		if (s != -1) {
 			/* aggregate passed by value on
@@ -54,6 +56,15 @@ fixarg(Ref *r, int k, Ins *i, Fn *fn)
 			r1 = newtmp("isel", k, fn);
 			emit(Oaddr, k, r1, SLOT(s), R);
 			break;
+		}
+		if (k == Kw && fn->tmp[r0.val].cls == Kl) {
+			/* TODO: this sign extension isn't needed
+			 * for 32-bit arithmetic instructions
+			 */
+			r1 = newtmp("isel", k, fn);
+			emit(Oextsw, Kl, r1, r0, R);
+		} else {
+			assert(k == fn->tmp[r0.val].cls);
 		}
 		break;
 	}

@@ -361,6 +361,11 @@ emitins(Ins *i, Fn *fn, FILE *f)
 			die("invalid call argument");
 		}
 		break;
+	case Osalloc:
+		emitf("sub sp, sp, %0", i, fn, f);
+		if (!req(i->to, R))
+			emitf("mv %=, sp", i, fn, f);
+		break;
 	}
 }
 
@@ -421,12 +426,12 @@ rv64_emitfn(Fn *fn, FILE *f)
 	}
 	frame = (frame + 15) & ~15;
 
-	if (frame < 2048)
+	if (frame <= 2048)
 		fprintf(f, "\tadd sp, sp, -%d\n", frame);
 	else
 		fprintf(f,
-			"\tli t6, -%d\n"
-			"\tadd sp, sp, t6\n",
+			"\tli t6, %d\n"
+			"\tsub sp, sp, t6\n",
 			frame);
 	for (pr = rv64_rclob, off = 0; *pr >= 0; pr++) {
 		if (fn->reg & BIT(*pr)) {
@@ -443,8 +448,15 @@ rv64_emitfn(Fn *fn, FILE *f)
 		lbl = 1;
 		switch (b->jmp.type) {
 		case Jret0:
-			if (fn->dynalloc)
-				fprintf(f, "\tadd sp, fp, -%d\n", frame - 16);
+			if (fn->dynalloc) {
+				if (frame - 16 <= 2048)
+					fprintf(f, "\tadd sp, fp, -%d\n", frame - 16);
+				else
+					fprintf(f,
+						"\tli t6, %d\n"
+						"\tsub sp, sp, t6\n",
+						frame - 16);
+			}
 			for (pr = rv64_rclob, off = 0; *pr >= 0; pr++) {
 				if (fn->reg & BIT(*pr)) {
 					fprintf(f, "\t%s %s, %d(sp)\n", *pr < FT0 ? "ld" : "fld", rname[*pr], off);

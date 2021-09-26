@@ -303,7 +303,7 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 	int k, cty, envc;
 	uint n;
 	uint64_t stk, off;
-	Ref r, env, tmp[2];
+	Ref r, r1, env, tmp[2];
 
 	env = R;
 	ca = alloc((i1-i0) * sizeof ca[0]);
@@ -328,7 +328,7 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 			stk += 8;
 	}
 	if (stk)
-		emit(Oadd, Kl, TMP(SP), TMP(SP), getcon(stk, fn));
+		emit(Osalloc, Kl, R, getcon(-stk, fn), R);
 
 	if (!req(i1->arg[1], R)) {
 		stkblob(i1->to, &cr, fn, ilp);
@@ -386,11 +386,12 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 	if (!stk)
 		return;
 
+	r = newtmp("abi", Kl, fn);
 	for (i=i0, c=ca, off=0; i<i1; i++, c++) {
 		if (i->op == Oargv || (c->class & Cstk) == 0)
 			continue;
 		if (i->op != Oargc) {
-			r = newtmp("abi", Kl, fn);
+			r1 = newtmp("abi", Kl, fn);
 			/* w arguments are stored sign-extended
 			 * to 64-bits
 			 *
@@ -399,7 +400,7 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 			 * stack position since the ABI says the
 			 * upper bits are undefined
 			 */
-			emit(i->cls == Kw ? Ostorel : Ostorew+i->cls, 0, R, i->arg[0], r);
+			emit(i->cls == Kw ? Ostorel : Ostorew+i->cls, 0, R, i->arg[0], r1);
 			if (i->cls == Kw) {
 				/* TODO: we only need this sign extension
 				 * for subtyped l temporaries passed as w
@@ -412,12 +413,12 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 				curi->arg[0] = newtmp("abi", Kl, fn);
 				emit(Oextsw, Kl, curi->arg[0], i->arg[0], R);
 			}
-			emit(Oadd, Kl, r, TMP(SP), getcon(off, fn));
+			emit(Oadd, Kl, r1, r, getcon(off, fn));
 		} else
-			blit(TMP(SP), off, i->arg[1], c->size, fn);
+			blit(r, off, i->arg[1], c->t->size, fn);
 		off += c->size;
 	}
-	emit(Osub, Kl, TMP(SP), TMP(SP), getcon(stk, fn));
+	emit(Osalloc, Kl, r, getcon(stk, fn), R);
 }
 
 static Params

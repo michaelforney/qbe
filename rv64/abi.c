@@ -376,8 +376,17 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 		}
 	}
 
-	off = 0;
 	for (i=i0, c=ca; i<i1; i++, c++) {
+		if (c->class & Cfpint)
+			emit(Ocast, KWIDE(*c->cls) ? Kl : Kw, TMP(*c->reg), i->arg[0], R);
+		if (c->class & Cptr)
+			blit(i->arg[0], 0, i->arg[1], c->t->size, fn);
+	}
+
+	if (!stk)
+		return;
+
+	for (i=i0, c=ca, off=0; i<i1; i++, c++) {
 		if (i->op == Oargv || (c->class & Cstk) == 0)
 			continue;
 		if (i->op != Oargc) {
@@ -408,20 +417,7 @@ selcall(Fn *fn, Ins *i0, Ins *i1, Insl **ilp)
 			blit(TMP(SP), off, i->arg[1], c->size, fn);
 		off += c->size;
 	}
-
-	for (i=i0, c=ca; i<i1; i++, c++) {
-		if (i->op == Oargv)
-			continue;
-		if (c->class & Cfpint)
-			emit(Ocast, KWIDE(*c->cls) ? Kl : Kw, TMP(*c->reg), i->arg[0], R);
-	}
-
-	if (stk)
-		emit(Osub, Kl, TMP(SP), TMP(SP), getcon(stk, fn));
-
-	for (i=i0, c=ca; i<i1; i++, c++)
-		if (i->op != Oargv && c->class & Cptr)
-			blit(i->arg[0], 0, i->arg[1], c->t->size, fn);
+	emit(Osub, Kl, TMP(SP), TMP(SP), getcon(stk, fn));
 }
 
 static Params

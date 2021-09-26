@@ -1,5 +1,11 @@
 #include "all.h"
 
+Rv64Op rv64_op[NOp] = {
+#define O(op, t, x) [O##op] =
+#define V(imm) { imm },
+#include "../ops.h"
+};
+
 int rv64_rsave[] = {
 	T0, T1, T2, T3, T4, T5,
 	A0, A1, A2, A3, A4, A5, A6, A7,

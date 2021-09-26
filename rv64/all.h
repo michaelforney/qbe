@@ -1,5 +1,7 @@
 #include "../all.h"
 
+typedef struct Rv64Op Rv64Op;
+
 enum Rv64Reg {
 	/* caller-save */
 	T0 = RXX + 1, T1, T2, T3, T4, T5,
@@ -26,9 +28,14 @@ enum Rv64Reg {
 };
 MAKESURE(reg_not_tmp, FS11 < (int)Tmp0);
 
+struct Rv64Op {
+	char imm;
+};
+
 /* targ.c */
 extern int rv64_rsave[];
 extern int rv64_rclob[];
+extern Rv64Op rv64_op[];
 
 /* abi.c */
 bits rv64_retregs(Ref, int[2]);

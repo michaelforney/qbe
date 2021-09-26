@@ -7,6 +7,12 @@ memarg(Ref *r, int op, Ins *i)
 	|| (isstore(op) && r == &i->arg[1]);
 }
 
+static int
+immarg(Ref *r, int op, Ins *i)
+{
+	return rv64_op[op].imm && r == &i->arg[1];
+}
+
 static void
 fixarg(Ref *r, int k, Ins *i, Fn *fn)
 {
@@ -21,6 +27,9 @@ fixarg(Ref *r, int k, Ins *i, Fn *fn)
 	case RCon:
 		c = &fn->con[r0.val];
 		if (c->type == CAddr && memarg(r, op, i))
+			break;
+		if (c->type == CBits && immarg(r, op, i)
+		&& -2048 <= c->bits.i && c->bits.i < 2048)
 			break;
 		r1 = newtmp("isel", k, fn);
 		if (KBASE(k) == 1) {

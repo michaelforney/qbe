@@ -3,7 +3,7 @@
 static int
 memarg(Ref *r, int op, Ins *i)
 {
-	return ((isload(op) || iscall(op)) && r == &i->arg[0])
+	return ((isload(op) || op == Ocall) && r == &i->arg[0])
 	|| (isstore(op) && r == &i->arg[1]);
 }
 

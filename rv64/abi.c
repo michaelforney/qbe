@@ -554,7 +554,6 @@ rv64_abi(Fn *fn)
 				emiti(*i);
 				break;
 			case Ocall:
-			case Ovacall:
 				for (i0=i; i0>b->ins; i0--)
 					if (!isarg((i0-1)->op))
 						break;

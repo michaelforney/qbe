@@ -134,7 +134,6 @@ emitf(char *s, Ins *i, Fn *fn, FILE *f)
 	Ref r;
 	int k, c;
 	Con *pc;
-	unsigned n;
 	int64_t offset;
 
 	fputc('\t', f);
@@ -176,11 +175,9 @@ emitf(char *s, Ins *i, Fn *fn, FILE *f)
 				break;
 			case RCon:
 				pc = &fn->con[r.val];
-				n = pc->bits.i;
 				assert(pc->type == CBits);
-				if (pc->bits.i > 0xfff)
-					die("immediate is too large");  // XXX
-				fprintf(f, "%u", n);
+				assert(pc->bits.i >= -2048 && pc->bits.i <= 2047);
+				fprintf(f, "%d", (int)pc->bits.i);
 				break;
 			}
 			break;
@@ -211,7 +208,7 @@ emitf(char *s, Ins *i, Fn *fn, FILE *f)
 			case RSlot:
 				offset = slot(r.val, fn);
 				assert(offset >= -2048 && offset <= 2047);
-				fprintf(f, "%"PRId64"(fp)", offset);
+				fprintf(f, "%d(fp)", (int)offset);
 				break;
 			}
 			break;

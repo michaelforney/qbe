@@ -309,6 +309,7 @@ emitins(Ins *i, Fn *fn, FILE *f)
 				case Ks: i->op = Ostores; break;
 				case Kd: i->op = Ostored; break;
 				}
+				fixslot(&i->arg[1], fn, f);
 				goto Table;
 			}
 			break;
@@ -320,6 +321,7 @@ emitins(Ins *i, Fn *fn, FILE *f)
 			break;
 		case RSlot:
 			i->op = Oload;
+			fixslot(&i->arg[0], fn, f);
 			goto Table;
 		default:
 			assert(isreg(i->arg[0]));

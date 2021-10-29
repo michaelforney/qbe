@@ -443,15 +443,17 @@ emitins(Ins i, Fn *fn, FILE *f)
 		if (req(i.to, i.arg[0]))
 			break;
 		t0 = rtype(i.arg[0]);
-		if (isreg(i.to)
-		&& t0 == RCon
+		if (t0 == RCon
 		&& fn->con[i.arg[0].val].type == CBits
 		&& fn->con[i.arg[0].val].bits.i == 0) {
-			if (KBASE(i.cls) == 0)
-				emitf("xor%k %=, %=", &i, fn, f);
-			else
-				emitf("pxor %D=, %D=", &i, fn, f);
-			break;
+			if (isreg(i.to)) {
+				if (KBASE(i.cls) == 0)
+					emitf("xor%k %=, %=", &i, fn, f);
+				else
+					emitf("pxor %D=, %D=", &i, fn, f);
+				break;
+			}
+			i.cls = KWIDE(i.cls) ? Kl : Kw;
 		}
 		if (i.cls == Kl
 		&& t0 == RCon

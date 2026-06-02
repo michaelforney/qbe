@@ -292,12 +292,13 @@ loadaddr(Con *c, char *rn, E *e)
 			    "\tadd\tR, R, #:tprel_lo12_nc:SO\n";
 		break;
 	case SExt:
+		assert(c->bits.i == 0);
 		if (T.apple)
-			s = "\tadrp\tR, S@gotpageO\n"
-			    "\tldr\tR, [R, S@gotpageoffO]\n";
+			s = "\tadrp\tR, S@gotpage\n"
+			    "\tldr\tR, [R, S@gotpageoff]\n";
 		else
-			s = "\tadrp\tR, :got:SO\n"
-			    "\tldr\tR, [R, #:got_lo12:SO]\n";
+			s = "\tadrp\tR, :got:S\n"
+			    "\tldr\tR, [R, #:got_lo12:S]\n";
 		break;
 	}
 
